@@ -488,8 +488,33 @@ namespace System.Windows.Documents
 
 namespace System.Windows.Threading
 {
+    // A host able to run a repeating callback on its UI thread. A UI shell
+    // installs one so the shim below becomes a real timer; a headless run
+    // leaves it null and the shim stays inert, exactly as it was.
+    public interface IDispatcherTimerHost
+    {
+        IDisposable Schedule(TimeSpan interval, Action onTick);
+    }
+
+    // WPF's DispatcherTimer raises Tick on the UI thread.
+    //
+    // With no host installed this is a no-op: Start() flips a flag and nothing
+    // ever ticks. That is deliberate for a headless test run, where a live
+    // background timer would fire trigger output asynchronously in the middle
+    // of assertions.
+    //
+    // It is *not* good enough at runtime. TriggerTimerManager keeps its list of
+    // running timers pruned from Tick; if Tick never fires, an expired timer
+    // stays in that list forever and the next match takes the "restart the
+    // existing one" branch - which updates a viewmodel that was already removed
+    // from the spell list, so the row never comes back. Installing a host fixes
+    // that without changing anything for callers that do not.
     public class DispatcherTimer
     {
+        public static IDispatcherTimerHost Host { get; set; }
+
+        private IDisposable subscription;
+
         public TimeSpan Interval { get; set; }
         public bool IsEnabled { get; private set; }
         public event EventHandler Tick;
@@ -497,11 +522,15 @@ namespace System.Windows.Threading
         public void Start()
         {
             IsEnabled = true;
+            subscription?.Dispose();
+            subscription = Host?.Schedule(Interval, RaiseTick);
         }
 
         public void Stop()
         {
             IsEnabled = false;
+            subscription?.Dispose();
+            subscription = null;
         }
 
         internal void RaiseTick()
