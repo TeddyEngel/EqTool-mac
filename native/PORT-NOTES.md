@@ -715,3 +715,29 @@ and two `PigTimer` lines.
   insertion order with the group as a label on the row.
 - No text to speech, no audio, no tray icon, no settings screen.
 - `settings.json` still lives in the build output.
+
+### Verifying UI changes: capture at native resolution
+
+A downscaled full-screen screenshot cannot be used to judge type or spacing, and
+trying to do so produced a wrong conclusion here.
+
+`screencapture -x` on this machine yields 5120x2880. The app window is about
+440pt wide out of 2560pt logical, so it occupies roughly a sixth of the frame.
+Downscaling that to 1200px for the repository leaves 12pt row text about three
+pixels tall. Everything looks cramped at that size, whether or not it is.
+
+Judged from those downscaled images, the density pass appeared to have clipped
+descenders, and `SizeRowHeight` was raised 18 to 20 to fix it. Re-inspecting a
+native-resolution crop of the same capture showed descenders and underscores in
+`Ramp_Swap`, `Sky_Ring_War`, `Xygoz` and `Hoshkar_Repop` rendering fully with
+clearance at 18. There was nothing to fix; the change was reverted.
+
+For anything involving glyph rendering, row pitch or spacing, crop the window
+region out of the full-resolution capture and inspect that:
+
+```bash
+screencapture -x /tmp/shot.png
+sips -c 1500 1000 --cropOffset 0 0 /tmp/shot.png --out /tmp/window-native.png
+```
+
+Downscale only for committing evidence, never before judging it.
