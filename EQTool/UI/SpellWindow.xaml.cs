@@ -13,6 +13,8 @@ namespace EQTool.UI
 {
     public partial class SpellWindow : BaseSaveStateWindow
     {
+        protected override bool SupportsClickThrough => true;
+
         private readonly SpellWindowViewModel spellWindowViewModel;
         private readonly SettingsWindowViewModel settingsWindowViewModel;
         private readonly IAppDispatcher appDispatcher;

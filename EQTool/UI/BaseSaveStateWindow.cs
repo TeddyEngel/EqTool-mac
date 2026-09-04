@@ -94,8 +94,17 @@ namespace EQTool.UI
             SaveState();
         }
 
+        // Must stay false here: SettingManagement also derives from this class, and making
+        // it click-through leaves the user unable to click the checkbox that turns it off.
+        protected virtual bool SupportsClickThrough => false;
+
         private void OnSourceInitializedApplyClickThrough(object sender, EventArgs e)
         {
+            if (!SupportsClickThrough)
+            {
+                return;
+            }
+
             this.ToggleClickThrough(settings.OverlayClickThrough);
         }
 

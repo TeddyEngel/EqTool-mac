@@ -43,6 +43,8 @@ namespace EQTool.UI
 
     public partial class EventOverlay : BaseSaveStateWindow
     {
+        protected override bool SupportsClickThrough => true;
+
         private readonly EQToolSettings settings;
         private readonly ActivePlayer activePlayer;
         private readonly List<ChainOverlayData> chainDatas = new List<ChainOverlayData>();
