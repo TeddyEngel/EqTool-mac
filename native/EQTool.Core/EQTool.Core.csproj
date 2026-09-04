@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <Compile Include="Compat\**\*.cs" />
+    <Compile Include="Platform\**\*.cs" />
   </ItemGroup>
 
   <ItemGroup>

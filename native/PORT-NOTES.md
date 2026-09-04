@@ -342,11 +342,9 @@ Milestone 2 should be UI-shaped. Concrete next steps in priority order:
    cross-platform decoder (e.g. Pfim + `SkiaSharp`) or ship pre-baked PNGs.
 2. Real `IAppDispatcher` bound to whatever UI toolkit Milestone 2 picks
    (Avalonia is already spiked under `mac/spike/`).
-3. `Paths.Combine` and `UIFileName.TryParse` divergence: acceptable as
-   long as the native settings loader never round-trips a Windows-shaped
-   install path onto macOS. If it must (e.g. importing settings from an
-   existing Wine install), add an explicit normalisation step ahead of
-   `Paths.Combine`.
+3. `Paths.Combine` and `UIFileName.TryParse` divergence: **resolved**, see
+   "Path normalisation" below. `Platform/MacPathNormalizer.cs` now provides
+   the normalisation step this item called for.
 4. The 12 handler-level SpellWindow tests
    (`SpellCounterTests`, `SpellMatchingTests`, `SpellViewModelTests`,
    `SpellWornOffOtherTests`, `SlainHandlerTests`, `CustomTimerHandlerTests`,
@@ -355,3 +353,68 @@ Milestone 2 should be UI-shaped. Concrete next steps in priority order:
    `SpellWindowViewModel`. Milestone 2 should keep them running as it
    swaps in the native UI shell for `SpellWindowViewModel`'s WPF
    consumers.
+
+## Path normalisation
+
+`Platform/MacPathNormalizer.cs`, tested by
+`native/EQTool.Core.Tests/MacPathNormalizerTests.cs` (11 tests).
+
+### The problem
+
+The 28 remaining test failures all come from Windows-shaped path *data*, and
+they made a second, quieter problem easy to miss. Both upstream helpers are
+correct for native macOS input:
+
+- `Paths.Combine("/Users/x/EQ/", "eqclient.ini")` returns
+  `/Users/x/EQ/eqclient.ini`. On macOS `Path.DirectorySeparatorChar` and
+  `Path.AltDirectorySeparatorChar` are both `/`, so the trims fire correctly.
+- `UIFileName.TryParse("/Users/x/EQ/UI_Pigy_P1999Green.ini")` returns
+  `PlayerName = "Pigy"`.
+
+Given Windows input on macOS, neither throws. They corrupt silently:
+
+- `Paths.Combine("C:\EQ\", "eqclient.ini")` returns `C:\EQ\/eqclient.ini`,
+  because `\` is not a separator here so `TrimEnd` does nothing.
+- `UIFileName.TryParse("C:\EQ\UI_Pigy_P1999Green.ini")` returns **true** with
+  `PlayerName = "C:\EQ\UI_Pigy"`, because `Path.GetFileName` does not treat
+  `\` as a separator on macOS.
+
+The second is the dangerous one. A false success is harder to notice than an
+exception.
+
+This is not hypothetical. The Wine build stores Windows paths in
+`settings.json` (`EqPath`, `EqLogPath`). Anyone moving from the Wine build to
+the native client feeds exactly those strings in.
+
+### Why the fix is not in `Paths.Combine`
+
+`Paths.Combine` is correct on Windows and correct on macOS for macOS input.
+Teaching it to treat `\` as a separator would change Windows behaviour, and
+the file is upstream's — editing it costs merge cleanliness for every future
+`git merge upstream/master`. Normalising at the native client's settings
+boundary keeps the zero-upstream-edit property intact.
+
+### Behaviour
+
+`MacPathNormalizer.TryNormalize(path, winePrefix, out normalizedPath)`:
+
+| Input | Result |
+|---|---|
+| `/Users/x/EQ/Logs` | unchanged, `true` |
+| `Z:\Users\x\EQ` | `/Users/x/EQ` (Wine maps `Z:` to host root) |
+| `C:\EQ\Logs` + prefix | `<prefix>/drive_c/EQ/Logs` |
+| `c:\EQ\Logs` + prefix | same; drive letter is case-insensitive |
+| `C:\` + prefix | `<prefix>/drive_c` |
+| `C:\EQ\Logs`, no prefix | `false` — a drive letter cannot be resolved without one |
+| `Logs\eqlog_Pigy.txt` | `Logs/eqlog_Pigy.txt` |
+| null / whitespace | `false` |
+
+It returns `bool` rather than a string specifically so an unresolvable drive
+letter fails loudly. Returning a best-guess string would reintroduce the
+silent-corruption failure mode this class exists to remove.
+
+### Not yet wired up
+
+Nothing calls this yet — there is no native settings loader to call it from.
+Milestone 2 must run every path read from `settings.json` through it before
+handing anything to `Paths.Combine` or `UIFileName.TryParse`.
