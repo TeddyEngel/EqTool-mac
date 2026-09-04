@@ -1,130 +1,274 @@
 # PigParse on macOS
 
-PigParse parses your EverQuest log file to show spell timers, triggers, DPS meters, and maps while you play on Project 1999 or Quarm. This repository maintains macOS support for running the application under Wine.
+PigParse parses your EverQuest log file to show spell timers, triggers, DPS
+meters, and maps while you play on Project 1999 or Quarm. This directory
+maintains macOS support for running it under Wine.
 
 ## Current status
 
-The application runs under Wine on macOS. That much has been checked directly: it installs, launches, renders its interface, reads a log file, and draws its overlays above other Wine windows.
+The application runs under Wine on macOS. It installs, launches, renders its
+interface, reads a log file, and draws its overlays above other Wine windows.
+The details of that verification are in `spike/WINE-FINDINGS.md`.
 
 What has not been checked matters just as much:
 
-- Nobody has run this against a real EverQuest client yet. The testing used a hand-written log file and Wine's own configuration dialog standing in for the game. Expect rough edges on first contact with the actual client.
-- Text-to-speech does not work. Upstream builds for Linux and macOS strip `System.Speech`, so triggers set to speak will stay silent. Visual alerts and audio sound files still work normally.
-- Overlay windows pass mouse clicks through only on fully transparent pixels. Any opaque content, such as a timer bar, receives the click instead of passing it to the game behind it.
+- Nobody has run this against a real EverQuest client yet. The testing used a
+  hand-written log file and Wine's own configuration dialog standing in for
+  the game. Expect rough edges on first contact with the actual client.
+- Text-to-speech does not work. The Linux and macOS builds strip
+  `System.Speech`, so triggers set to speak stay silent. Visual alerts and
+  audio sound files still work.
+- Overlay windows pass mouse clicks through only on fully transparent pixels.
+  Any opaque content, such as a timer bar, receives the click instead of
+  passing it to the game behind it.
 
-## Prerequisites
+## Quick install
 
-You need Homebrew and Wine. Testing was done on macOS 14.8.8 Sonoma on Intel x86_64. Other versions and Apple Silicon may well work, but nobody has tried.
+You need a Mac with Homebrew already installed. The installer will not install
+Homebrew for you. Get it first from [brew.sh](https://brew.sh) if you don't
+have it.
 
-Wine ships as a Homebrew cask and Winetricks as a formula, so they install with two separate commands. Running them together fails.
+Clone this repo and run the installer:
+
+```bash
+git clone https://github.com/smasherprog/EqTool.git
+cd EqTool
+./mac/install.command
+```
+
+Or open Finder, browse to `mac/` in the cloned repo, and double-click
+`install.command`. Terminal will open and run it.
+
+The installer:
+
+1. Checks for Homebrew.
+2. Installs `wine-stable` and `winetricks` through Homebrew if they aren't
+   already present.
+3. Creates a dedicated Wine prefix at `~/.wine-pigparse`. Your `~/.wine` and
+   CrossOver bottles are not touched.
+4. Installs .NET Framework 4.8 into that prefix. This step takes about nine
+   minutes and looks frozen for long stretches. It is not frozen. Leave it.
+5. Downloads a pinned PigParse release (currently `5.26.830.1`) and extracts
+   it into the prefix.
+6. Generates `~/Applications/PigParse.app` on your machine.
+
+When it's finished, launch PigParse from Finder like any other app, or with
+`open ~/Applications/PigParse.app` from the terminal.
+
+To uninstall:
+
+```bash
+./mac/uninstall.command
+```
+
+That removes the Wine prefix and the app bundle. It leaves Homebrew,
+`wine-stable`, and `winetricks` alone in case you want them for other things.
+
+### Why the installer builds the .app instead of shipping one
+
+macOS puts a quarantine attribute on any bundle downloaded through a browser
+and, for unsigned apps, App Translocation runs it from a randomised read-only
+path. That breaks relative paths and self-writes, which PigParse does. Files
+obtained through `git clone` are not quarantined, so the installer itself
+runs. The `.app` it generates on your machine has no quarantine attribute
+either, and Translocation leaves it alone.
+
+If you downloaded this repo as a zip through a browser instead of cloning it,
+macOS will refuse to run the script until you clear the quarantine flag:
+
+```bash
+xattr -d com.apple.quarantine mac/install.command
+xattr -d com.apple.quarantine mac/uninstall.command
+```
+
+### Installer options
+
+The installer reads a few environment variables:
+
+- `PIGPARSE_VERSION` — release tag to install. Defaults to the pinned version
+  in the script. Set to `latest` to resolve the newest release from the
+  GitHub API. Print the resolved version and download URL before starting.
+- `PIGPARSE_PREFIX` — Wine prefix directory. Defaults to
+  `$HOME/.wine-pigparse`. Change it if you want a throwaway prefix for
+  testing.
+- `PIGPARSE_APP_NAME` — name of the generated bundle without the `.app`
+  suffix. Defaults to `PigParse`. Mirror `PIGPARSE_PREFIX` for isolated test
+  runs.
+- `PIGPARSE_YES=1` — skip the initial confirmation prompt.
+
+Rerunning the installer against an existing prefix is safe. It detects that
+.NET 4.8 is already installed (via the winetricks marker file and
+`mscorlib.dll`) and skips that nine-minute step. It re-downloads the release
+zip and re-extracts, which lets you upgrade PigParse without a full reinstall.
+
+## First-run configuration
+
+The first launch shows a red "Configuration missing!" banner. PigParse can't
+auto-detect your EverQuest install because Wine paths and Mac paths don't
+match what the Windows detection code expects.
+
+Point PigParse at your EverQuest directory in the settings window. Wine maps
+your Mac root to drive `Z:`.
+
+- If EverQuest is installed inside this same Wine prefix, set the path to
+  `C:\EQ` (or wherever you put it inside `drive_c`).
+- If EverQuest runs in a separate CrossOver bottle or a different Wine
+  prefix, browse through `Z:` to select the path on your Mac, for example
+  `Z:\Users\yourusername\Library\Application Support\CrossOver\Bottles\EverQuest\drive_c\EverQuest`.
+
+You also need to turn on logging in EverQuest itself. PigParse reads nothing
+but the log file, so with logging off it just sits there.
+
+The settings window has a button that writes `Log=TRUE` into your
+`eqclient.ini` for you. Use it. The one case where it can't help is an
+EverQuest installed under `Program Files`, where Wine's permissions get in
+the way — the app will say so, and you then add `Log=TRUE` to `eqclient.ini`
+by hand.
+
+Typing `/log on` in game also works, but only for that session.
+
+To map your position accurately on PigParse maps, make an in-game hotkey that
+contains `/loc` and bind it to a movement key such as `A` or `D`.
+
+## System tray
+
+Under Wine on macOS, PigParse minimizes to the macOS menu bar near the top
+right of the screen. Look for a small pig icon.
+
+Closing the main windows does not exit the application. Right-click the pig
+icon to reopen the settings window, trigger overlay, DPS meter, or map. Use
+`Exit` in that menu to close PigParse for good.
+
+## Troubleshooting
+
+### .NET Framework 4.8 installer looks stuck
+
+`winetricks` installs `dotnet40` first, then applies `dotnet48`. The installer
+pauses for several minutes while registering DLL assemblies. Don't close the
+window. It finishes on its own after roughly nine minutes.
+
+### "Configuration missing!" banner
+
+PigParse hasn't found `eqgame.exe` or a valid log file. Open the General tab
+in settings and check that `Eq Path` and `Eq Log Path` point to real
+directories. Drive `Z:` gets you at Mac files outside the Wine prefix.
+
+### Timers and DPS don't update
+
+Confirm EverQuest is writing to a log file. Check that `eqclient.ini`
+contains `Log=TRUE` or type `/log on` in game. Look for new lines in
+`Logs/eqlog_<Character>_<Server>.txt`.
+
+### Finding errors
+
+PigParse writes failures to `Errors.txt`. The file appears only once
+something has actually gone wrong, so its absence is a good sign. It lands
+in whatever directory the app was launched from — for the generated `.app`
+that's `~/.wine-pigparse/drive_c/PigParse`, because the launcher `cd`s
+there before running Wine.
+
+```bash
+cat "$HOME/.wine-pigparse/drive_c/PigParse/Errors.txt"
+```
+
+Your configuration lives in `settings.json` in the same folder. Deleting
+that file resets the app to first-run state, which is a quick way out of a
+broken configuration.
+
+### The app replaced itself
+
+The stock build checks upstream for new releases and updates itself. That's
+normal and generally what you want, but it also means a version you had
+working can change under you. If something breaks after a restart, an update
+is a reasonable first suspect.
+
+### Homebrew's `wget` fails during .NET install
+
+This is why the installer sets `WINETRICKS_DOWNLOADER=curl`. Homebrew's
+`wget` on this host was linked against `libunistring.2.dylib` and the
+installed libunistring was `.5`, so every download died with a
+`dyld: Library not loaded` error. If you were running `winetricks` yourself,
+`brew reinstall wget` would fix it. Through the installer, `curl` sidesteps
+the problem entirely.
+
+## Manual install
+
+Use this section if you'd rather run each step yourself, or if the installer
+fails partway and you want to pick up from where it stopped. It's exactly
+what the installer does.
+
+### Prerequisites
+
+You need Homebrew and Wine. Testing was done on macOS 14.8.8 Sonoma on
+Intel x86_64. Other versions and Apple Silicon may well work, but nobody has
+tried.
+
+Wine ships as a Homebrew cask and Winetricks as a formula, so they install
+with two separate commands. Running them together fails.
 
 ```bash
 brew install --cask wine-stable
 brew install winetricks
 ```
 
-## Setup
+### Setup
 
-Use a dedicated Wine prefix to avoid altering your main EverQuest or CrossOver configuration.
+Use a dedicated Wine prefix to avoid touching your main EverQuest or
+CrossOver configuration.
 
 1. Create and initialize an isolated 64-bit Wine prefix.
 
-```bash
-export WINEPREFIX="$HOME/.wine-pigparse"
-export WINEARCH=win64
-wineboot -u
-```
+   ```bash
+   export WINEPREFIX="$HOME/.wine-pigparse"
+   export WINEARCH=win64
+   wineboot -u
+   ```
 
-2. Force Winetricks to use `curl` for file downloads.
+2. Force Winetricks to use `curl` for downloads.
 
-```bash
-export WINETRICKS_DOWNLOADER=curl
-```
+   ```bash
+   export WINETRICKS_DOWNLOADER=curl
+   ```
 
-The default `wget` path broke during testing due to Homebrew library version mismatches. Setting `curl` prevents this failure mode.
+   The default `wget` path broke during testing because of a Homebrew
+   library version mismatch. `curl` prevents that failure mode.
 
 3. Install .NET Framework 4.8 into the prefix.
 
-```bash
-winetricks -q dotnet48
-```
+   ```bash
+   winetricks -q dotnet48
+   ```
 
-This installation takes about 9 minutes. The progress bar may appear to hang during runtime registration steps, but the process is still running. Allow it to finish.
+   About nine minutes. The progress bar may appear to hang during runtime
+   registration. Leave it.
 
-4. Download and extract the upstream release package.
+4. Download and extract the upstream release.
 
-Download the `EQTool_Linux*.zip` package from the [upstream releases page](https://github.com/smasherprog/EqTool/releases). Extract the files into your prefix directory:
+   Get `EQTool_Linux5.26.830.1.zip` (or a newer version) from the
+   [releases page](https://github.com/smasherprog/EqTool/releases), then:
 
-```bash
-mkdir -p "$WINEPREFIX/drive_c/PigParse"
-unzip EQTool_Linux*.zip -d "$WINEPREFIX/drive_c/PigParse"
-```
+   ```bash
+   mkdir -p "$WINEPREFIX/drive_c/PigParse"
+   unzip EQTool_Linux*.zip -d "$WINEPREFIX/drive_c/PigParse"
+   ```
 
 5. Start the application.
 
-Change into the application folder first. PigParse writes its error log relative to whatever directory you launch it from, so starting it elsewhere scatters those files around your disk.
+   `cd` into the app folder first. PigParse writes `Errors.txt` relative to
+   whatever directory you launch it from, so starting it elsewhere scatters
+   those files around.
 
-```bash
-cd "$WINEPREFIX/drive_c/PigParse"
-wine EQTool.exe
-```
+   ```bash
+   cd "$WINEPREFIX/drive_c/PigParse"
+   wine EQTool.exe
+   ```
 
-## First-run configuration
+Follow the [First-run configuration](#first-run-configuration) section above
+from there.
 
-On first launch, the application displays a red "Configuration missing!" banner. It cannot auto-detect your EverQuest installation path because Windows system paths do not match macOS file locations.
+### Manual uninstall
 
-Point the application to your EverQuest directory manually in the settings window. Wine maps your Mac root directory to drive letter `Z:`.
-
-- If EverQuest is installed inside this same Wine prefix, set the path to `C:\EQ` (or your chosen path inside `drive_c`).
-- If EverQuest runs in a separate CrossOver bottle or different Wine prefix, browse through drive `Z:` to select your Mac directory path, such as `Z:\Users\yourusername\Library\Application Support\CrossOver\Bottles\EverQuest\drive_c\EverQuest`.
-
-You must also turn on logging in EverQuest itself. PigParse reads nothing but the log file, so with logging off it sits there doing nothing.
-
-The settings window has a button that writes `Log=TRUE` into your `eqclient.ini` for you. Use it. The one case where it cannot help is an EverQuest installed under `Program Files`, where Wine's permissions get in the way — the app will tell you so, and you then add `Log=TRUE` to `eqclient.ini` by hand.
-
-Typing `/log on` in game works too, but only for that session.
-
-To map your position accurately on PigParse maps, set up a location macro. Create an in-game hotkey containing `/loc` and bind it to a common movement key such as `A` or `D`.
-
-## System tray operation
-
-When launched on macOS under Wine, PigParse minimizes to the macOS menu bar near the top right of your screen. Look for a small pig icon.
-
-Closing main windows does not exit the application. Right-click the pig menu bar icon to reopen the settings window, trigger overlay, DPS meter, or map. Use the Exit option in that menu to close the program completely.
-
-## Troubleshooting
-
-### .NET Framework 4.8 installer appears stuck
-
-The `.NET` installation phase through `winetricks` installs `dotnet40` before applying `dotnet48`. The installer pauses for several minutes while registering DLL assemblies. Do not close the terminal window; it finishes automatically after roughly 9 minutes.
-
-### Application shows "Configuration missing!" banner
-
-This banner means PigParse has not found `eqgame.exe` or valid log files. Open the General tab in settings and verify that `Eq Path` and `Eq Log Path` point to valid directories. Drive `Z:` gives access to your Mac files outside the Wine prefix.
-
-### Timers and DPS meters do not update
-
-Confirm that EverQuest is actively writing to a log file. Check that `eqclient.ini` contains `Log=TRUE` or type `/log on` in game. Verify that new lines appear in your log file located in `Logs/eqlog_Character_Server.txt`.
-
-### Finding errors
-
-PigParse writes failures to `Errors.txt`. The file appears only once something has actually gone wrong, so its absence is a good sign rather than a problem. It lands in whatever directory you launched from, which is why the setup step has you `cd` into the application folder first.
-
-```bash
-cat "$WINEPREFIX/drive_c/PigParse/Errors.txt"
-```
-
-Your terminal session also carries Wine's own output. It is noisier, but occasionally says more.
-
-Your configuration lives in `settings.json` in the same folder. Deleting that file resets the app to first-run state, which is a quick way out of a broken configuration.
-
-### The app replaced itself
-
-The stock build checks upstream for new releases and updates itself. That is normal and generally what you want. It does mean a version you had working can change under you — if something breaks after a restart, an update is a reasonable first suspect.
-
-## Uninstalling
-
-To remove PigParse and its runtime dependencies, delete the dedicated Wine prefix directory:
+Delete the dedicated Wine prefix:
 
 ```bash
 rm -rf "$HOME/.wine-pigparse"
