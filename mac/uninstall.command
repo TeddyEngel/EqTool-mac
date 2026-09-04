@@ -29,10 +29,15 @@ if [[ "$(uname -s)" != "Darwin" ]]; then
     die "This uninstaller only runs on macOS."
 fi
 
+# Strip trailing slashes first, so "$HOME/.wine/" cannot slip past the guards below.
+while [[ "$PIGPARSE_PREFIX" == */ ]] && [[ "$PIGPARSE_PREFIX" != "/" ]]; do
+    PIGPARSE_PREFIX="${PIGPARSE_PREFIX%/}"
+done
+
 # Refuse to touch obviously dangerous paths.
 case "$PIGPARSE_PREFIX" in
-    /|""|"$HOME"|"$HOME/")
-        die "Refusing to remove $PIGPARSE_PREFIX. That is not a Wine prefix."
+    /|""|"$HOME")
+        die "Refusing to remove '$PIGPARSE_PREFIX'. That is not a Wine prefix."
         ;;
 esac
 if [[ "$PIGPARSE_PREFIX" == "$HOME/.wine" ]]; then
@@ -58,7 +63,12 @@ if [[ $PREFIX_EXISTS -eq 0 ]] && [[ $BUNDLE_EXISTS -eq 0 ]]; then
     exit 0
 fi
 
-if [[ "$PIGPARSE_YES" != "1" ]] && [[ -t 0 ]]; then
+if [[ "$PIGPARSE_YES" != "1" ]]; then
+    # Fail closed. With no terminal to prompt on (piped from curl, run from a
+    # build step) we must refuse rather than delete unattended.
+    if [[ ! -t 0 ]]; then
+        die "No terminal to confirm on. Rerun in Terminal, or set PIGPARSE_YES=1 to confirm deletion."
+    fi
     printf 'Delete these? [y/N] '
     read -r reply
     case "$reply" in
