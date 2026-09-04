@@ -139,6 +139,16 @@ namespace EQTool.ViewModels
             }
         }
 
+        public bool OverlayClickThrough
+        {
+            get => toolSettings.OverlayClickThrough;
+            set
+            {
+                toolSettings.OverlayClickThrough = value;
+                OnPropertyChanged();
+            }
+        }
+
         public double DPSWindowOpacity
         {
             get => toolSettings.DpsWindowState.Opacity ?? 1.0;
