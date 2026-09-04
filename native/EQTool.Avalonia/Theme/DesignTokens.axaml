@@ -63,13 +63,20 @@
   <!-- Countdowns use a monospaced face so the digits do not jitter as they tick. -->
   <FontFamily x:Key="FontMono">Menlo, Monaco, Courier New</FontFamily>
 
-  <x:Double x:Key="TypeMicro">10</x:Double>
+  <!--
+    The scale is tuned for a window that stands next to a running EverQuest
+    client during a raid. A dozen or more timers have to be readable at a
+    glance without scrolling, so the countdown is the only thing that gets to
+    be large: it is what the player reads under pressure. The group label is
+    context and sits at the bottom of the scale.
+  -->
+  <x:Double x:Key="TypeMicro">9</x:Double>
   <x:Double x:Key="TypeCaption">11</x:Double>
-  <x:Double x:Key="TypeBody">13</x:Double>
-  <x:Double x:Key="TypeRow">14</x:Double>
-  <x:Double x:Key="TypeCountdown">15</x:Double>
-  <x:Double x:Key="TypeHeading">18</x:Double>
-  <x:Double x:Key="TypeTitle">24</x:Double>
+  <x:Double x:Key="TypeBody">12</x:Double>
+  <x:Double x:Key="TypeRow">12</x:Double>
+  <x:Double x:Key="TypeCountdown">13</x:Double>
+  <x:Double x:Key="TypeHeading">16</x:Double>
+  <x:Double x:Key="TypeTitle">20</x:Double>
 
   <!-- ============================ Spacing ============================ -->
   <!-- 2px base, doubling. Nothing in a view may use a value not listed here. -->
@@ -83,21 +90,37 @@
   <x:Double x:Key="Space7">24</x:Double>
   <x:Double x:Key="Space8">32</x:Double>
 
-  <Thickness x:Key="InsetRow">10,5,10,5</Thickness>
+  <!-- Rows carry no vertical inset of their own. SizeRowHeight sets the pitch
+       and the row contents centre inside it, so the two cannot fight. -->
+  <Thickness x:Key="InsetRow">8,0,8,0</Thickness>
   <Thickness x:Key="InsetPanel">12</Thickness>
-  <Thickness x:Key="InsetHeader">16,12,16,12</Thickness>
-  <Thickness x:Key="InsetButton">12,6,12,6</Thickness>
+  <Thickness x:Key="InsetList">10,4,10,4</Thickness>
+  <Thickness x:Key="InsetHeader">14,8,14,8</Thickness>
+  <Thickness x:Key="InsetButton">10,4,10,4</Thickness>
   <Thickness x:Key="RuleBottom">0,0,0,1</Thickness>
   <Thickness x:Key="RuleTop">0,1,0,0</Thickness>
 
+  <!-- Gaps between repeated elements, kept out of the views. -->
+  <Thickness x:Key="GapRow">0,0,0,1</Thickness>
+  <Thickness x:Key="GapRowGroup">8,0,8,0</Thickness>
+  <Thickness x:Key="GapHeaderMeta">0,6,0,0</Thickness>
+  <Thickness x:Key="GapHeaderMetaSource">10,0,0,0</Thickness>
+  <Thickness x:Key="GapSpine">0,0,8,0</Thickness>
+
   <!-- ===================== Radii and dimensions ===================== -->
 
-  <CornerRadius x:Key="RadiusRow">3</CornerRadius>
+  <!-- A row radius any larger than this reads as a gap between rows, and at
+       this pitch the list cannot afford one. -->
+  <CornerRadius x:Key="RadiusRow">2</CornerRadius>
   <CornerRadius x:Key="RadiusPanel">6</CornerRadius>
   <CornerRadius x:Key="RadiusPill">10</CornerRadius>
 
-  <x:Double x:Key="SizeRowHeight">30</x:Double>
+  <x:Double x:Key="SizeRowHeight">18</x:Double>
   <x:Double x:Key="SizeSpineWidth">3</x:Double>
-  <x:Double x:Key="SizeCountdownColumn">92</x:Double>
+  <x:Double x:Key="SizeBrandSpineHeight">16</x:Double>
+  <!-- Widest countdown the formatter can produce is "1h 2m 3s". -->
+  <x:Double x:Key="SizeCountdownColumn">68</x:Double>
+  <x:Double x:Key="SizeEmptyRule">40</x:Double>
+  <x:Double x:Key="SizeEmptyProseWidth">280</x:Double>
 
 </ResourceDictionary>
