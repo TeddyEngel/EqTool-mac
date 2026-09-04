@@ -688,6 +688,8 @@ and two `PigTimer` lines.
 | `09-density-before.png` | The spacious layout at capacity: fifteen full rows in a 640pt window, a sixteenth clipped |
 | `10-density-after.png` | The same window height after the density pass: twenty-nine full rows, a thirtieth clipped |
 | `11-density-empty-state.png` | The empty state and the tightened header |
+| `12-spell-icons.png` | Six spell-backed rows with their own icons above nineteen PigTimers on Feign Death's, twenty-five rows at the unchanged 18pt pitch |
+| `13-icon-slot-fallback-probe.png` | The reserved empty slot, from the temporary probe described under "Nearly every row has an icon" |
 
 ### What surprised me
 
@@ -708,8 +710,6 @@ and two `PigTimer` lines.
 
 ### Not done
 
-- Spell icons are still null. The `SpellIcons` stub returns entries with no
-  bitmap, so rows carry no icon. Follow-up 1 from Milestone 1 stands.
 - No grouping headers. Upstream groups rows by `GroupName` through a WPF
   `ListCollectionView`, which the shim is a no-op for. Rows here sit in
   insertion order with the group as a label on the row.
@@ -742,7 +742,12 @@ sips -c 1500 1000 --cropOffset 0 0 /tmp/shot.png --out /tmp/window-native.png
 
 Downscale only for committing evidence, never before judging it.
 
-## Spell icons: scoped, not built
+## Spell icons
+
+Built. `SpellIconSheets` supplies the pre-baked PNG sheets, `SpellIconService`
+in the Avalonia layer decodes and crops them, and the timer rows draw the
+result. The notes below record why the route was chosen; the section after them
+covers what the build turned up.
 
 The `SpellIcons` stub returns entries whose `Icon` is null, so nothing renders
 an icon. Three routes were considered; the cheapest is clearly best, but it is
@@ -782,3 +787,39 @@ sheet bytes and sprite geometry and let the Avalonia layer build
 
 Treat this as one piece of work: pre-bake, embed, expose sheet plus geometry,
 add the icon column.
+
+### Cropping without `CroppedBitmap`
+
+Avalonia 11.2 does ship `Avalonia.Media.Imaging.CroppedBitmap`, so upstream's
+markup could almost be transcribed. It is not a `Bitmap` though, only an
+`IImage`, and it holds a live reference to the whole sheet and re-crops on every
+draw. `SpellIconService` instead copies the pixels out once with
+`Bitmap.CopyPixels` into a standalone 40x40 `Bitmap`, which is what makes the
+cache worth having.
+
+Two caches, both concurrent, because `LogParser` builds rows from a timer
+thread: one sheet per index, one bitmap per (sheet, rect). The factories sit
+behind `Lazy` so a 256x256 PNG is decoded at most once even under a race. With
+the list rebuilt off a 100 ms tick and 25 or so visible rows, decoding per row
+per tick would have dominated the frame.
+
+### Nearly every row has an icon
+
+I expected hand-made PigTimers to carry no icon, leaving the column empty on
+most rows. That is wrong.
+`EQTool/Services/Handlers/CustomTimerHandler.cs:66-76` deliberately lends custom
+timers Feign Death's artwork, `SpellWindowViewModel.cs:636-640` does the same
+for the API roll timers, and `RandomRollHandler.cs:26-36` uses Invisibility's.
+So every countdown type the window shows resolves to a real icon.
+
+`HasIcon` can still be false. `SpellExtensions.Map:37` only assigns `SpellIcon`
+and `Rect` when the sheet number lands in 1..7, and leaves both at their
+defaults otherwise. In the shipped P99 data it never does — the largest
+`spell_icon` in `spells_us.txt` is 215, which maps to sheet 6 — so no log line
+can reach the fallback. I checked it instead by temporarily forcing
+`ResolveIcon` to return null for custom timers: the reserved slot keeps the
+column's width and shows a 4px mark, and the names stay on the same left edge as
+the rows that do have icons. The probe was then reverted.
+
+Icons are drawn at 13px, not the 40px they are cut at, so a row carrying one is
+exactly as tall as one that does not and the 18pt pitch is unchanged.
