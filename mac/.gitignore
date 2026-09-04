@@ -4,3 +4,10 @@
 spike/wine/EQTool_Linux*.zip
 spike/wine/extracted/
 spike/wine/logs/
+
+# Installer scratch: don't commit downloaded release zips, extracted app trees,
+# or generated .app bundles. Screenshots under evidence-installer/ ARE committed
+# (downscaled with sips -Z 1200), same convention as spike/evidence-wine/.
+EQTool_Linux*.zip
+PigParse.app/
+*.app/
