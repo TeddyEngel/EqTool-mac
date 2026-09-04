@@ -8,16 +8,97 @@
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <GenerateProgramFile>true</GenerateProgramFile>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <DefineConstants>$(DefineConstants);TEST</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
-    <PackageReference Include="MSTest.TestAdapter" Version="3.6.4" />
-    <PackageReference Include="MSTest.TestFramework" Version="3.6.4" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
+    <PackageReference Include="MSTest.TestAdapter" Version="4.0.2" />
+    <PackageReference Include="MSTest.TestFramework" Version="4.0.2" />
+    <PackageReference Include="Autofac" Version="8.4.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\EQTool.Core\EQTool.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\EQtoolsTests\spells_us.txt" Link="spells_us.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\EQtoolsTests\DiscordResponse.json" Link="DiscordResponse.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\EQtoolsTests\LogFiles\log1.txt" Link="LogFiles\log1.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\EQtoolsTests\uifiles\default\*.tga" LinkBase="uifiles\default">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <Target Name="CopyTestResourcesToBinRoot" AfterTargets="Build">
+    <ItemGroup>
+      <_TestResources Include="$(OutputPath)spells_us.txt" />
+      <_TestResources Include="$(OutputPath)DiscordResponse.json" />
+      <_LogFileResources Include="$(OutputPath)LogFiles\log1.txt" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_TestResources)" DestinationFolder="$(OutputPath)..\..\" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(_LogFileResources)" DestinationFolder="$(OutputPath)..\..\LogFiles\" SkipUnchangedFiles="true" />
+  </Target>
+
+  <ItemGroup>
+    <Compile Include="..\..\EQtoolsTests\BaseTestClass.cs"        LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\DI.cs"                   LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\Fakes\AppDispatcherFake.cs" LinkBase="Upstream\Fakes" />
+    <Compile Include="..\..\EQtoolsTests\Fakes\TextToSpeachFake.cs"  LinkBase="Upstream\Fakes" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\EQtoolsTests\AuctionParsingTests.cs"          LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\BoatScheduleTests.cs"            LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\CommsParserTests.cs"             LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\CompleteHealCommsHandlerTests.cs" LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\CustomTimerHandlerTests.cs"      LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\DamageParserTests.cs"            LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\DeathTests.cs"                   LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\DeathTouchTriggerTests.cs"       LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\DiscordTests.cs"                 LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\DragonEffectTests.cs"            LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\ExpGainedTests.cs"               LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\FTETests.cs"                     LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\FactionParserTests.cs"           LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\FileReaderTests.cs"              LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\FindEqTests.cs"                  LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\GroupLeaderTests.cs"             LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\InstallPathCheckerTests.cs"      LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\ItemBeginsToGlowTests.cs"        LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\LogFileNameTests.cs"             LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\MobInfoTests.cs"                 LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\ParsingTests.cs"                 LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\PathsTests.cs"                   LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\PetTests.cs"                     LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\PlayerLevelDetectionParserTests.cs" LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\PlayerWhoLogParseTests.cs"       LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\RandomRollTests.cs"              LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\SlainHandlerTests.cs"            LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\SpellAdaptiveGroupingTests.cs"   LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\SpellCounterTests.cs"            LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\SpellMatchingTests.cs"           LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\SpellViewModelTests.cs"          LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\SpellWornOffOtherTests.cs"       LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\TriggerColorsTests.cs"           LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\TriggerTestSampleGeneratorTests.cs" LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\TriggerTests.cs"                 LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\UIFileNameTests.cs"              LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\UserDefinedTriggerTests.cs"      LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\ZoneParsingTests.cs"             LinkBase="Upstream" />
+    <Compile Include="..\..\EQtoolsTests\ZoneSpawnTimeTests.cs"           LinkBase="Upstream" />
   </ItemGroup>
 
 </Project>
