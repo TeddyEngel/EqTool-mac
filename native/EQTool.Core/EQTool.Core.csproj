@@ -34,6 +34,15 @@
                       LinkBase="Linked\EQToolShared\Properties" />
   </ItemGroup>
 
+  <!-- Spell icon sheets, pre-baked from EQTool\Spells\*.tga by native/scripts/bake-spell-icons.sh.
+       Upstream decodes the .tga at runtime through TGASharpLib and System.Drawing, neither
+       of which is available here. See "Spell icons" in native/PORT-NOTES.md. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Spells\*.png">
+      <LogicalName>EQTool.Core.Spells.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="..\..\EQTool\Services\Parsing\**\*.cs"
              Exclude="..\..\EQTool\Services\Parsing\**\obj\**\*.cs;..\..\EQTool\Services\Parsing\**\bin\**\*.cs"
