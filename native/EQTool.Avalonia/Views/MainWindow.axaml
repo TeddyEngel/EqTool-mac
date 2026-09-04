@@ -209,15 +209,36 @@
                           Background="{Binding Accent}" />
 
                   <Grid Margin="{StaticResource InsetRow}"
-                        ColumnDefinitions="*,Auto,Auto">
-                    <TextBlock Grid.Column="0"
+                        ColumnDefinitions="Auto,*,Auto,Auto">
+
+                    <!-- The slot keeps its width whether or not the row has an
+                         icon, so every name in the list starts on one edge. -->
+                    <Panel Grid.Column="0"
+                           Width="{StaticResource SizeRowIcon}"
+                           Height="{StaticResource SizeRowIcon}"
+                           Margin="{StaticResource GapRowIcon}"
+                           VerticalAlignment="Center">
+                      <Border Width="{StaticResource SizeRowIconVoid}"
+                              Height="{StaticResource SizeRowIconVoid}"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              CornerRadius="{StaticResource RadiusRow}"
+                              Background="{StaticResource BrushLineBright}"
+                              IsVisible="{Binding !HasIcon}" />
+                      <Image Source="{Binding Icon}"
+                             IsVisible="{Binding HasIcon}"
+                             Stretch="Uniform"
+                             RenderOptions.BitmapInterpolationMode="HighQuality" />
+                    </Panel>
+
+                    <TextBlock Grid.Column="1"
                                Classes="rowname"
                                Text="{Binding Name}" />
-                    <TextBlock Grid.Column="1"
+                    <TextBlock Grid.Column="2"
                                Classes="rowgroup"
                                Margin="{StaticResource GapRowGroup}"
                                Text="{Binding GroupName}" />
-                    <TextBlock Grid.Column="2"
+                    <TextBlock Grid.Column="3"
                                Classes="countdown"
                                Classes.urgent="{Binding IsUrgent}"
                                Width="{StaticResource SizeCountdownColumn}"

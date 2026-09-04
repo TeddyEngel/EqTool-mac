@@ -102,6 +102,7 @@
 
   <!-- Gaps between repeated elements, kept out of the views. -->
   <Thickness x:Key="GapRow">0,0,0,1</Thickness>
+  <Thickness x:Key="GapRowIcon">0,0,7,0</Thickness>
   <Thickness x:Key="GapRowGroup">8,0,8,0</Thickness>
   <Thickness x:Key="GapHeaderMeta">0,6,0,0</Thickness>
   <Thickness x:Key="GapHeaderMetaSource">10,0,0,0</Thickness>
@@ -117,6 +118,13 @@
 
   <x:Double x:Key="SizeRowHeight">18</x:Double>
   <x:Double x:Key="SizeSpineWidth">3</x:Double>
+  <!-- Spell icons are cut at 40px but drawn at the row's text size, so a row
+       carrying one is exactly as tall as a row that does not. -->
+  <x:Double x:Key="SizeRowIcon">13</x:Double>
+  <!-- Shown in place of an icon the sheets cannot supply. The slot keeps its
+       width either way, so every name in the list starts on one left edge and
+       an unresolved icon reads as a mark rather than a hole. -->
+  <x:Double x:Key="SizeRowIconVoid">4</x:Double>
   <x:Double x:Key="SizeBrandSpineHeight">16</x:Double>
   <!-- Widest countdown the formatter can produce is "1h 2m 3s". -->
   <x:Double x:Key="SizeCountdownColumn">68</x:Double>

@@ -44,6 +44,7 @@ namespace EQTool.Avalonia.ViewModels
         private readonly SpellWindowViewModel spellWindow;
         private readonly ActivePlayer activePlayer;
         private readonly LogParser logParser;
+        private readonly SpellIconService iconService = new SpellIconService();
         private readonly DispatcherTimer ticker;
         private readonly Dictionary<BaseTriggerViewModel, TimerRowViewModel> rowsBySource
             = new Dictionary<BaseTriggerViewModel, TimerRowViewModel>();
@@ -222,7 +223,7 @@ namespace EQTool.Avalonia.ViewModels
             if (rowsBySource.ContainsKey(item))
                 return;
 
-            var row = new TimerRowViewModel(timer);
+            var row = new TimerRowViewModel(timer, iconService);
             rowsBySource[item] = row;
             Rows.Add(row);
         }

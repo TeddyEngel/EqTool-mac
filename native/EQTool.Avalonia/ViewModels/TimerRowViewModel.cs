@@ -2,6 +2,8 @@ using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using EQTool.Avalonia.Services;
 using EQTool.ViewModels.SpellWindow;
 
 namespace EQTool.Avalonia.ViewModels
@@ -20,12 +22,16 @@ namespace EQTool.Avalonia.ViewModels
         private readonly TimerViewModel timer;
         private bool urgent;
 
-        public TimerRowViewModel(TimerViewModel timer)
+        public TimerRowViewModel(TimerViewModel timer, SpellIconService iconService)
         {
             this.timer = timer ?? throw new ArgumentNullException(nameof(timer));
 
+            if (iconService == null)
+                throw new ArgumentNullException(nameof(iconService));
+
             Accent = ToAvaloniaBrush(timer.ProgressBarColor);
             AccentWash = ToWashBrush(timer.ProgressBarColor);
+            Icon = ResolveIcon(timer, iconService);
             urgent = timer.TotalRemainingDuration <= UrgentThreshold;
 
             timer.PropertyChanged += OnTimerPropertyChanged;
@@ -49,6 +55,15 @@ namespace EQTool.Avalonia.ViewModels
         // The draining fill. Held well below full strength so the row label
         // stays readable across both the filled and the empty part of the track.
         public IBrush AccentWash { get; }
+
+        // Null when the trigger's icon index falls outside the seven sheets that
+        // ship. Timers with no spell of their own are not that case: upstream
+        // lends them Feign Death's artwork, so nearly every row resolves to
+        // something. Fixed for the life of the trigger, so it is resolved once
+        // and never raises a change notification.
+        public Bitmap Icon { get; }
+
+        public bool HasIcon => Icon != null;
 
         public bool IsUrgent
         {
@@ -90,6 +105,14 @@ namespace EQTool.Avalonia.ViewModels
         private void OnPropertyChanged([CallerMemberName] string name = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        }
+
+        private static Bitmap ResolveIcon(TimerViewModel timer, SpellIconService iconService)
+        {
+            if (!timer.HasIcon)
+                return null;
+
+            return iconService.GetIcon(timer.Icon.SpellIndex, timer.Rect);
         }
 
         private static Color ToColor(System.Windows.Media.SolidColorBrush brush, byte alpha)
