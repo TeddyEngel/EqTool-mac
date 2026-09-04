@@ -1,16 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!--
-    Native macOS/.NET 9 build of PigParse's platform-agnostic core.
-
-    This project deliberately pulls upstream source into the compile by
-    reference, using <Compile Include="..\..\..\path" Link="..." />. No upstream
-    file may be edited; problems are solved here (Compat/ shims, exclusions).
-
-    Nullable and implicit usings are disabled because the upstream code is
-    C# 7.3-era and will not survive those analyzers.
-  -->
-
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <LangVersion>latest</LangVersion>
@@ -21,53 +10,41 @@
     <RootNamespace>EQTool.Core</RootNamespace>
     <AssemblyName>EQTool.Core</AssemblyName>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <DefineConstants>$(DefineConstants);TEST</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
 
-  <!-- Local shims (Point3D, and any other Windows-only type declarations). -->
   <ItemGroup>
     <Compile Include="Compat\**\*.cs" />
   </ItemGroup>
 
-  <!--
-    EQToolShared: 100% platform-agnostic; the whole tree compiles as-is.
-    Exclude generated Properties/AssemblyInfo.cs to avoid duplicate assembly
-    attribute errors alongside the SDK-generated one (we also set
-    GenerateAssemblyInfo=false but the file's own attributes would still clash).
-  -->
   <ItemGroup>
     <Compile Include="..\..\EQToolShared\**\*.cs"
              Exclude="..\..\EQToolShared\**\obj\**\*.cs;..\..\EQToolShared\**\bin\**\*.cs;..\..\EQToolShared\Properties\AssemblyInfo.cs"
              LinkBase="Linked\EQToolShared" />
   </ItemGroup>
 
-  <!--
-    Static data used by MasterNPCList / MasterItemList / vendor-price lookups.
-    Resources.Designer.cs (linked above) reads them out of a resource named
-    "EQToolShared.Properties.Resources.resources"; keep that logical name so
-    the generated ResourceManager finds the payload without any edits.
-  -->
   <ItemGroup>
     <EmbeddedResource Include="..\..\EQToolShared\Properties\Resources.resx"
                       LogicalName="EQToolShared.Properties.Resources.resources"
                       LinkBase="Linked\EQToolShared\Properties" />
   </ItemGroup>
 
-  <!-- All log parsers. -->
   <ItemGroup>
     <Compile Include="..\..\EQTool\Services\Parsing\**\*.cs"
              Exclude="..\..\EQTool\Services\Parsing\**\obj\**\*.cs;..\..\EQTool\Services\Parsing\**\bin\**\*.cs"
              LinkBase="Linked\EQTool\Services\Parsing" />
   </ItemGroup>
 
-  <!--
-    Minimal set of EQTool/Models needed by the parsers. Each addition here was
-    driven by a compile error, not by "just in case" thinking. Files not listed
-    here are UI/WPF-heavy and irrelevant to log parsing.
-  -->
+  <ItemGroup>
+    <Compile Include="..\..\EQTool\Services\Handlers\**\*.cs"
+             Exclude="..\..\EQTool\Services\Handlers\**\obj\**\*.cs;..\..\EQTool\Services\Handlers\**\bin\**\*.cs"
+             LinkBase="Linked\EQTool\Services\Handlers" />
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="..\..\EQTool\Models\IEqLogParser.cs"    LinkBase="Linked\EQTool\Models" />
     <Compile Include="..\..\EQTool\Models\EventModels.cs"     LinkBase="Linked\EQTool\Models" />
@@ -85,23 +62,46 @@
     <Compile Include="..\..\EQTool\Models\TriggerComponents.cs" LinkBase="Linked\EQTool\Models" />
     <Compile Include="..\..\EQTool\Models\TriggerColors.cs"   LinkBase="Linked\EQTool\Models" />
     <Compile Include="..\..\EQTool\Models\BuiltInTriggers.cs" LinkBase="Linked\EQTool\Models" />
+    <Compile Include="..\..\EQTool\Models\Pets.cs"            LinkBase="Linked\EQTool\Models" />
   </ItemGroup>
 
-  <!-- Non-UI services referenced by the parsers or by types they use. -->
   <ItemGroup>
     <Compile Include="..\..\EQTool\Services\DebugOutput.cs"        LinkBase="Linked\EQTool\Services" />
     <Compile Include="..\..\EQTool\Services\LogEvents.cs"          LinkBase="Linked\EQTool\Services" />
+    <Compile Include="..\..\EQTool\Services\LogParser.cs"          LinkBase="Linked\EQTool\Services" />
+    <Compile Include="..\..\EQTool\Services\EQToolSettingsLoad.cs" LinkBase="Linked\EQTool\Services" />
+    <Compile Include="..\..\EQTool\Services\FindEq.cs"             LinkBase="Linked\EQTool\Services" />
+    <Compile Include="..\..\EQTool\Services\BoatScheduleService.cs" LinkBase="Linked\EQTool\Services" />
+    <Compile Include="..\..\EQTool\Services\PigParseApi.cs"        LinkBase="Linked\EQTool\Services" />
+    <Compile Include="..\..\EQTool\Services\AudioService.cs"       LinkBase="Linked\EQTool\Services" />
+    <Compile Include="..\..\EQTool\Services\IO\FileReader.cs"      LinkBase="Linked\EQTool\Services\IO" />
     <Compile Include="..\..\EQTool\Services\Spells\SpellDurations.cs" LinkBase="Linked\EQTool\Services\Spells" />
     <Compile Include="..\..\EQTool\Services\Spells\ParseSpells_spells_us.cs" LinkBase="Linked\EQTool\Services\Spells" />
     <Compile Include="..\..\EQTool\Services\Spells\SpellExtensions.cs" LinkBase="Linked\EQTool\Services\Spells" />
+    <Compile Include="..\..\EQTool\Spells\SpellUIExtensions.cs"        LinkBase="Linked\EQTool\Spells" />
+    <Compile Include="..\..\EQTool\Services\CHService.cs"              LinkBase="Linked\EQTool\Services" />
+    <Compile Include="..\..\EQTool\Services\WikiApi.cs"                LinkBase="Linked\EQTool\Services" />
+    <Compile Include="..\..\EQTool\Services\SavePlayerStateService.cs" LinkBase="Linked\EQTool\Services" />
+    <Compile Include="..\..\EQTool\Services\InstallPathChecker.cs"     LinkBase="Linked\EQTool\Services" />
+    <Compile Include="..\..\EQTool\Services\PlayerTrackerService.cs"   LinkBase="Linked\EQTool\Services" />
+    <Compile Include="..\..\EQTool\Services\TriggerActionExecutor.cs"  LinkBase="Linked\EQTool\Services" />
+    <Compile Include="..\..\EQTool\Services\TriggerTimerManager.cs"    LinkBase="Linked\EQTool\Services" />
+    <Compile Include="..\..\EQTool\Services\TriggerTestSampleGenerator.cs" LinkBase="Linked\EQTool\Services" />
     <Compile Include="..\..\EQTool\Services\TypeConverters\EnumDescriptionTypeConverter.cs" LinkBase="Linked\EQTool\Services\TypeConverters" />
   </ItemGroup>
 
-  <!-- ViewModels the parsers reference by type name. -->
   <ItemGroup>
     <Compile Include="..\..\EQTool\ViewModels\ActivePlayerInfo.cs" LinkBase="Linked\EQTool\ViewModels" />
     <Compile Include="..\..\EQTool\ViewModels\ConsoleViewModel.cs" LinkBase="Linked\EQTool\ViewModels" />
+    <Compile Include="..\..\EQTool\ViewModels\SpellWindowViewModel.cs" LinkBase="Linked\EQTool\ViewModels" />
+    <Compile Include="..\..\EQTool\ViewModels\SpawnTimerDialogViewModel.cs" LinkBase="Linked\EQTool\ViewModels" />
+    <Compile Include="..\..\EQTool\ViewModels\DPSWindowViewModel.cs"        LinkBase="Linked\EQTool\ViewModels" />
+    <Compile Include="..\..\EQTool\ViewModels\EntittyDPS.cs"                LinkBase="Linked\EQTool\ViewModels" />
+    <Compile Include="..\..\EQTool\ViewModels\SpellWindow\**\*.cs"
+             Exclude="..\..\EQTool\ViewModels\SpellWindow\**\obj\**\*.cs;..\..\EQTool\ViewModels\SpellWindow\**\bin\**\*.cs"
+             LinkBase="Linked\EQTool\ViewModels\SpellWindow" />
     <Compile Include="..\..\EQTool\ViewModels\MobInfoComponents\MobInfoViewModel.cs" LinkBase="Linked\EQTool\ViewModels\MobInfoComponents" />
+    <Compile Include="..\..\EQTool\ViewModels\MobInfoComponents\PetViewModel.cs"    LinkBase="Linked\EQTool\ViewModels\MobInfoComponents" />
   </ItemGroup>
 
 </Project>

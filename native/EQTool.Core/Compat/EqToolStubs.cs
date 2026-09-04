@@ -11,30 +11,33 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Net.Http;
 using System.Threading;
 using EQTool.Models;
 using EQToolShared.Enums;
 
-// Stub for the WPF App singleton. Upstream references App.Version and
-// App.Current.Dispatcher from a couple of non-parser files that we still link
-// in. Nothing in the parsing path actually reads these, but the compiler needs
-// the symbols.
 namespace EQTool
 {
     public static class App
     {
         public static string Version => "0.0-mac-core";
         public static string VersionType => "Mac";
+
+        public static readonly HttpClient httpclient = new HttpClient();
+
+        public static void LogUnhandledException(Exception exception, string source, Servers? server)
+        {
+        }
     }
 }
 
 namespace EQTool.Services
 {
-    // Real upstream IAppDispatcher (EQTool/Services/AppDispatcher.cs) targets
-    // WPF's Dispatcher via App.Current.Dispatcher. The parsers only depend on
-    // the interface for constructor injection; a plain synchronous
-    // implementation is fine for a headless core.
+    public interface ITextToSpeach
+    {
+        void Say(string text);
+    }
+
     public interface IAppDispatcher
     {
         void DispatchUI(Action action);
@@ -60,9 +63,6 @@ namespace EQTool.Services
         }
     }
 
-    // BinaryFormatter is disabled in .NET 9. The parsers never persist anything
-    // through this helper; only settings-load code paths do, and we do not link
-    // those. Provide the surface so ParseSpells_spells_us compiles.
     public static class BinarySerializer
     {
         public static void WriteToBinaryFile<T>(string filePath, T objectToWrite)
@@ -76,38 +76,61 @@ namespace EQTool.Services
         }
     }
 
-    // Real upstream LoggingService (EQTool/Services/LoggingService.cs) references
-    // WPF's App class for version metadata and posts crash reports over HTTP on
-    // every call. Neither is desirable in a headless parsing core.
     public class LoggingService
     {
         public void Log(string message, EventType eventType, Servers? server)
         {
-            // Intentionally empty: parsing does not need remote error reporting.
         }
     }
 
-    // Real upstream SpellIcons (EQTool/Services/Spells/SpellIcons.cs) decodes
-    // embedded .tga icon resources using TGASharpLib and System.Drawing.Bitmap.
-    // Parsers only need EQSpells to be constructible and to walk the spell list;
-    // Spell.HasSpellIcon is computed from mapped indices, so returning an empty
-    // icon list here means Spell.Map(...) will report HasSpellIcon = false and
-    // EQSpells.BuildSpellInfo will skip every entry.
-    //
-    // Tests that need populated spell lookups can hand EQSpells the real
-    // ParseSpells_spells_us output and inject their own SpellIcon list via a
-    // custom subclass of this stub, or exercise the parsers in isolation
-    // without going through EQSpells.
     public class SpellIcons
     {
         public SpellIcons(EQToolSettings settings)
         {
-            // settings intentionally ignored in the stub.
         }
 
         public virtual List<SpellIcon> GetSpellIcons(Servers servers)
         {
-            return new List<SpellIcon>();
+            var list = new List<SpellIcon>();
+            for (var spellFileIndex = 1; spellFileIndex <= 7; spellFileIndex++)
+            {
+                list.Add(new SpellIcon { SpellIndex = spellFileIndex });
+            }
+            return list;
+        }
+    }
+
+    public static class ForegroundWindowHelper
+    {
+        public static bool IsEqGameFocused()
+        {
+            return false;
         }
     }
 }
+
+namespace EQTool.ViewModels.SettingsComponents
+{
+    public enum MobInfoItemType
+    {
+        Mob,
+        Pet,
+    }
+}
+
+namespace EQTool.ViewModels.MobInfoComponents
+{
+    public class MobInfoManagementViewModel
+    {
+        public EQTool.ViewModels.SettingsComponents.MobInfoItemType MobInfoItemType { get; set; }
+    }
+}
+
+namespace EQTool.ViewModels
+{
+    public class SettingsWindowViewModel
+    {
+        public string GroupLeaderName { get; set; } = "None";
+    }
+}
+
