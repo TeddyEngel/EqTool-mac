@@ -1,0 +1,265 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:EQTool.Avalonia.ViewModels"
+        x:Class="EQTool.Avalonia.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="PigParse"
+        Width="440"
+        Height="640"
+        MinWidth="340"
+        MinHeight="260"
+        Background="{StaticResource BrushWindowGround}">
+
+  <Window.Styles>
+
+    <Style Selector="TextBlock.brand">
+      <Setter Property="FontFamily" Value="{StaticResource FontDisplay}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeTitle}" />
+      <Setter Property="FontWeight" Value="DemiBold" />
+      <Setter Property="LetterSpacing" Value="3" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}" />
+    </Style>
+
+    <Style Selector="TextBlock.eyebrow">
+      <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeMicro}" />
+      <Setter Property="LetterSpacing" Value="2" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextFaint}" />
+    </Style>
+
+    <Style Selector="TextBlock.meta">
+      <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeCaption}" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextSecondary}" />
+      <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <!-- Mint means "a character is logged in and being followed". It must not
+         appear while the app is still waiting for one. -->
+    <Style Selector="TextBlock.meta.live">
+      <Setter Property="Foreground" Value="{StaticResource BrushSignalMint}" />
+    </Style>
+
+    <Style Selector="TextBlock.rowname">
+      <Setter Property="FontFamily" Value="{StaticResource FontDisplay}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeRow}" />
+      <Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <Style Selector="TextBlock.rowgroup">
+      <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeMicro}" />
+      <Setter Property="LetterSpacing" Value="1" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextSecondary}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="TextBlock.countdown">
+      <Setter Property="FontFamily" Value="{StaticResource FontMono}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeCountdown}" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="HorizontalAlignment" Value="Right" />
+    </Style>
+
+    <Style Selector="TextBlock.countdown.urgent">
+      <Setter Property="Foreground" Value="{StaticResource BrushSignalRose}" />
+    </Style>
+
+    <!-- The row fill. Templated rather than themed so the drained part of the
+         track stays exactly the panel colour and the text keeps its contrast. -->
+    <Style Selector="ProgressBar.rowfill">
+      <!-- The Fluent theme gives ProgressBar a short fixed height and centres
+           it. The row fill has to be the whole row, so both are overridden. -->
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Background="{TemplateBinding Background}"
+                  CornerRadius="{TemplateBinding CornerRadius}"
+                  ClipToBounds="True">
+            <Border Name="PART_Indicator"
+                    Background="{TemplateBinding Foreground}"
+                    HorizontalAlignment="Left" />
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+
+    <Style Selector="Button.ghost">
+      <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeCaption}" />
+      <Setter Property="Padding" Value="{StaticResource InsetButton}" />
+      <Setter Property="Background" Value="{StaticResource BrushSurfaceRaised}" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextSecondary}" />
+      <Setter Property="BorderBrush" Value="{StaticResource BrushLineHair}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="{StaticResource RadiusRow}" />
+    </Style>
+
+    <Style Selector="Button.ghost:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource BrushSurfaceRaised}" />
+      <Setter Property="BorderBrush" Value="{StaticResource BrushLineBright}" />
+      <Setter Property="TextBlock.Foreground" Value="{StaticResource BrushSignalAmber}" />
+    </Style>
+
+  </Window.Styles>
+
+  <DockPanel LastChildFill="True">
+
+    <!-- ============================= Header ============================= -->
+    <Border DockPanel.Dock="Top"
+            Background="{StaticResource BrushHeaderGround}"
+            BorderBrush="{StaticResource BrushLineHair}"
+            BorderThickness="{StaticResource RuleBottom}"
+            Padding="{StaticResource InsetHeader}">
+      <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*,Auto">
+
+        <!-- A short amber rule standing in for the pig mark: the app's one
+             piece of visual signature at this size. -->
+        <Border Grid.Row="0" Grid.Column="0"
+                Width="{StaticResource SizeSpineWidth}"
+                Height="20"
+                Margin="0,0,10,0"
+                VerticalAlignment="Center"
+                CornerRadius="{StaticResource RadiusRow}"
+                Background="{StaticResource BrushSignalAmber}" />
+
+        <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Vertical" VerticalAlignment="Center">
+          <TextBlock Classes="brand" Text="PIGPARSE" />
+          <TextBlock Classes="eyebrow" Text="LIVE TIMERS" />
+        </StackPanel>
+
+        <Button Grid.Row="0" Grid.Column="2"
+                Classes="ghost"
+                Name="ChooseLogFolderButton"
+                VerticalAlignment="Center"
+                Content="Log folder…" />
+
+        <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+              Margin="0,10,0,0"
+              ColumnDefinitions="Auto,*">
+          <TextBlock Classes="meta"
+                     Classes.live="{Binding HasCharacter}"
+                     Grid.Column="0"
+                     Text="{Binding CharacterLine}" />
+          <TextBlock Classes="meta"
+                     Grid.Column="1"
+                     Margin="12,0,0,0"
+                     HorizontalAlignment="Right"
+                     Text="{Binding SourceLine}" />
+        </Grid>
+
+      </Grid>
+    </Border>
+
+    <!-- ============================= Notice ============================= -->
+    <Border DockPanel.Dock="Top"
+            IsVisible="{Binding HasNotice}"
+            Background="{StaticResource BrushSurfacePanel}"
+            BorderBrush="{StaticResource BrushSignalAmber}"
+            BorderThickness="0,0,0,1"
+            Padding="{StaticResource InsetPanel}">
+      <Grid ColumnDefinitions="Auto,*">
+        <Border Grid.Column="0"
+                Width="{StaticResource SizeSpineWidth}"
+                Margin="0,0,12,0"
+                CornerRadius="{StaticResource RadiusRow}"
+                Background="{StaticResource BrushSignalAmber}" />
+        <TextBlock Grid.Column="1"
+                   FontFamily="{StaticResource FontUI}"
+                   FontSize="{StaticResource TypeBody}"
+                   Foreground="{StaticResource BrushTextPrimary}"
+                   TextWrapping="Wrap"
+                   Text="{Binding NoticeLine}" />
+      </Grid>
+    </Border>
+
+    <!-- ============================= Content ============================ -->
+    <Grid>
+
+      <ScrollViewer IsVisible="{Binding HasRows}"
+                    HorizontalScrollBarVisibility="Disabled"
+                    VerticalScrollBarVisibility="Auto"
+                    Padding="{StaticResource InsetPanel}">
+        <ItemsControl ItemsSource="{Binding Rows}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:TimerRowViewModel">
+              <Border Height="{StaticResource SizeRowHeight}"
+                      Margin="0,0,0,4"
+                      CornerRadius="{StaticResource RadiusRow}"
+                      Background="{StaticResource BrushSurfaceRow}"
+                      ClipToBounds="True">
+                <Grid>
+
+                  <ProgressBar Classes="rowfill"
+                               Minimum="0"
+                               Maximum="100"
+                               Value="{Binding PercentLeft}"
+                               Background="Transparent"
+                               Foreground="{Binding AccentWash}"
+                               CornerRadius="{StaticResource RadiusRow}" />
+
+                  <Border Width="{StaticResource SizeSpineWidth}"
+                          HorizontalAlignment="Left"
+                          Background="{Binding Accent}" />
+
+                  <Grid Margin="{StaticResource InsetRow}"
+                        ColumnDefinitions="*,Auto,Auto">
+                    <TextBlock Grid.Column="0"
+                               Classes="rowname"
+                               Text="{Binding Name}" />
+                    <TextBlock Grid.Column="1"
+                               Classes="rowgroup"
+                               Margin="12,0,12,0"
+                               Text="{Binding GroupName}" />
+                    <TextBlock Grid.Column="2"
+                               Classes="countdown"
+                               Classes.urgent="{Binding IsUrgent}"
+                               Width="{StaticResource SizeCountdownColumn}"
+                               Text="{Binding Countdown}" />
+                  </Grid>
+
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+
+      <!-- ========================== Empty state ========================== -->
+      <StackPanel IsVisible="{Binding IsEmpty}"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center"
+                  Margin="{StaticResource InsetHeader}"
+                  Spacing="8">
+        <Border Width="40"
+                Height="{StaticResource SizeSpineWidth}"
+                HorizontalAlignment="Center"
+                CornerRadius="{StaticResource RadiusRow}"
+                Background="{StaticResource BrushLineBright}" />
+        <TextBlock HorizontalAlignment="Center"
+                   FontFamily="{StaticResource FontDisplay}"
+                   FontSize="{StaticResource TypeHeading}"
+                   LetterSpacing="1"
+                   Foreground="{StaticResource BrushTextSecondary}"
+                   Text="Watching your log" />
+        <TextBlock HorizontalAlignment="Center"
+                   MaxWidth="280"
+                   TextAlignment="Center"
+                   TextWrapping="Wrap"
+                   FontFamily="{StaticResource FontUI}"
+                   FontSize="{StaticResource TypeBody}"
+                   Foreground="{StaticResource BrushTextFaint}"
+                   Text="Timers appear here the moment a trigger fires in game. Nothing is running right now." />
+      </StackPanel>
+
+    </Grid>
+
+  </DockPanel>
+
+</Window>

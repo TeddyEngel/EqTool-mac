@@ -1,0 +1,103 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!--
+    Design tokens for the native PigParse client.
+
+    Every colour, spacing value, type size and radius used by a view comes from
+    this file. Views must not carry literal values: if something new is needed,
+    add a token here first.
+
+    Direction: instrument panel. The window sits beside EverQuest, so it reads as
+    a piece of hardware rather than a document - near-black blue-grey ground,
+    hairline rules, amber as the signal colour, mint as the "healthy" colour.
+  -->
+
+  <!-- ============================ Colour ============================ -->
+
+  <Color x:Key="ColorSurfaceVoid">#FF080A0D</Color>
+  <Color x:Key="ColorSurfaceSunk">#FF0E1116</Color>
+  <Color x:Key="ColorSurfacePanel">#FF141922</Color>
+  <Color x:Key="ColorSurfaceRow">#FF19202A</Color>
+  <Color x:Key="ColorSurfaceRaised">#FF1F2833</Color>
+  <Color x:Key="ColorLineHair">#FF26303C</Color>
+  <Color x:Key="ColorLineBright">#FF3A4757</Color>
+  <Color x:Key="ColorTextPrimary">#FFE6EDF5</Color>
+  <Color x:Key="ColorTextSecondary">#FF93A1B1</Color>
+  <Color x:Key="ColorTextFaint">#FF5C6875</Color>
+  <Color x:Key="ColorSignalAmber">#FFFFA02E</Color>
+  <Color x:Key="ColorSignalMint">#FF62D6A0</Color>
+  <Color x:Key="ColorSignalRose">#FFFF5C6C</Color>
+  <Color x:Key="ColorInkOnSignal">#FF080A0D</Color>
+
+  <SolidColorBrush x:Key="BrushSurfaceVoid" Color="{StaticResource ColorSurfaceVoid}" />
+  <SolidColorBrush x:Key="BrushSurfaceSunk" Color="{StaticResource ColorSurfaceSunk}" />
+  <SolidColorBrush x:Key="BrushSurfacePanel" Color="{StaticResource ColorSurfacePanel}" />
+  <SolidColorBrush x:Key="BrushSurfaceRow" Color="{StaticResource ColorSurfaceRow}" />
+  <SolidColorBrush x:Key="BrushSurfaceRaised" Color="{StaticResource ColorSurfaceRaised}" />
+  <SolidColorBrush x:Key="BrushLineHair" Color="{StaticResource ColorLineHair}" />
+  <SolidColorBrush x:Key="BrushLineBright" Color="{StaticResource ColorLineBright}" />
+  <SolidColorBrush x:Key="BrushTextPrimary" Color="{StaticResource ColorTextPrimary}" />
+  <SolidColorBrush x:Key="BrushTextSecondary" Color="{StaticResource ColorTextSecondary}" />
+  <SolidColorBrush x:Key="BrushTextFaint" Color="{StaticResource ColorTextFaint}" />
+  <SolidColorBrush x:Key="BrushSignalAmber" Color="{StaticResource ColorSignalAmber}" />
+  <SolidColorBrush x:Key="BrushSignalMint" Color="{StaticResource ColorSignalMint}" />
+  <SolidColorBrush x:Key="BrushSignalRose" Color="{StaticResource ColorSignalRose}" />
+  <SolidColorBrush x:Key="BrushInkOnSignal" Color="{StaticResource ColorInkOnSignal}" />
+
+  <!-- Atmosphere: the window ground is a shallow vertical wash, not a flat fill. -->
+  <LinearGradientBrush x:Key="BrushWindowGround" StartPoint="0%,0%" EndPoint="0%,100%">
+    <GradientStop Offset="0" Color="{StaticResource ColorSurfaceSunk}" />
+    <GradientStop Offset="1" Color="{StaticResource ColorSurfaceVoid}" />
+  </LinearGradientBrush>
+
+  <LinearGradientBrush x:Key="BrushHeaderGround" StartPoint="0%,0%" EndPoint="0%,100%">
+    <GradientStop Offset="0" Color="{StaticResource ColorSurfacePanel}" />
+    <GradientStop Offset="1" Color="{StaticResource ColorSurfaceSunk}" />
+  </LinearGradientBrush>
+
+  <!-- ========================== Typography ========================== -->
+
+  <FontFamily x:Key="FontDisplay">Avenir Next Condensed, Avenir Next, Helvetica Neue</FontFamily>
+  <FontFamily x:Key="FontUI">Avenir Next, Helvetica Neue, Lucida Grande</FontFamily>
+  <!-- Countdowns use a monospaced face so the digits do not jitter as they tick. -->
+  <FontFamily x:Key="FontMono">Menlo, Monaco, Courier New</FontFamily>
+
+  <x:Double x:Key="TypeMicro">10</x:Double>
+  <x:Double x:Key="TypeCaption">11</x:Double>
+  <x:Double x:Key="TypeBody">13</x:Double>
+  <x:Double x:Key="TypeRow">14</x:Double>
+  <x:Double x:Key="TypeCountdown">15</x:Double>
+  <x:Double x:Key="TypeHeading">18</x:Double>
+  <x:Double x:Key="TypeTitle">24</x:Double>
+
+  <!-- ============================ Spacing ============================ -->
+  <!-- 2px base, doubling. Nothing in a view may use a value not listed here. -->
+
+  <x:Double x:Key="Space1">2</x:Double>
+  <x:Double x:Key="Space2">4</x:Double>
+  <x:Double x:Key="Space3">6</x:Double>
+  <x:Double x:Key="Space4">8</x:Double>
+  <x:Double x:Key="Space5">12</x:Double>
+  <x:Double x:Key="Space6">16</x:Double>
+  <x:Double x:Key="Space7">24</x:Double>
+  <x:Double x:Key="Space8">32</x:Double>
+
+  <Thickness x:Key="InsetRow">10,5,10,5</Thickness>
+  <Thickness x:Key="InsetPanel">12</Thickness>
+  <Thickness x:Key="InsetHeader">16,12,16,12</Thickness>
+  <Thickness x:Key="InsetButton">12,6,12,6</Thickness>
+  <Thickness x:Key="RuleBottom">0,0,0,1</Thickness>
+  <Thickness x:Key="RuleTop">0,1,0,0</Thickness>
+
+  <!-- ===================== Radii and dimensions ===================== -->
+
+  <CornerRadius x:Key="RadiusRow">3</CornerRadius>
+  <CornerRadius x:Key="RadiusPanel">6</CornerRadius>
+  <CornerRadius x:Key="RadiusPill">10</CornerRadius>
+
+  <x:Double x:Key="SizeRowHeight">30</x:Double>
+  <x:Double x:Key="SizeSpineWidth">3</x:Double>
+  <x:Double x:Key="SizeCountdownColumn">92</x:Double>
+
+</ResourceDictionary>
