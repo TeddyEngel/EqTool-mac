@@ -17,9 +17,15 @@ jobs:
       - name: Setup NuGet
         uses: nuget/setup-nuget@v2
 
+      # Restore only the two packages.config projects this build needs. Restoring the
+      # solution would drag in EQToolApis (SDK-style, net9.0), which nuget.exe hands to
+      # msbuild restore and which would then require the .NET 9 SDK on the runner.
+      # -SolutionDirectory puts packages in .\packages, matching the ..\packages HintPaths.
       - name: NuGet restore
         shell: pwsh
-        run: nuget restore EqTool.sln
+        run: |
+          nuget restore EQTool\packages.config -SolutionDirectory .
+          nuget restore EQToolShared\packages.config -SolutionDirectory .
 
       - name: Build EQTool (Mac configuration)
         shell: pwsh
