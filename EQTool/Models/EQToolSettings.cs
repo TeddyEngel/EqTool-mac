@@ -152,14 +152,7 @@ namespace EQTool.Models
         public List<TriggerFolder> TriggerFolders { get; set; } = new List<TriggerFolder>();
         public bool YouOnlySpells { get; set; }
         public bool ShowRandomRolls { get; set; }
-#if MACOS
-        // Default ON for the initial Mac CI build so click-through is exercised without
-        // hunting for the checkbox. Flip to `{ get; set; }` (no default) once the setting
-        // is verified in a real run.
-        public bool OverlayClickThrough { get; set; } = true;
-#else
         public bool OverlayClickThrough { get; set; }
-#endif
 
         public bool SyncUIFiles { get; set; }
 
