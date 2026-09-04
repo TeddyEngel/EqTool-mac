@@ -455,6 +455,8 @@ namespace EQTool
                 var v = "P99";
 #if BETA
                 v= "Beta";
+#elif MACOS
+                v= "Mac";
 #elif LINUX
                 v= "Linux";
 #endif
