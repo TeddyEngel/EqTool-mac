@@ -69,6 +69,12 @@ namespace EQTool.Services
 
         public static UpdateStatus ApplyUpdate(string parameter)
         {
+#if MACOS
+            // Mac builds are not distributed through the upstream GitHub releases; the
+            // asset filter would match the Linux zip and silently revert this patched
+            // binary. No user-visible error, no exception - just do nothing.
+            return UpdateStatus.NoUpdateApplied;
+#endif
             if (!string.IsNullOrWhiteSpace(parameter))
             {
                 if (parameter.Contains("ping"))
@@ -106,6 +112,10 @@ namespace EQTool.Services
 
         public static void CheckForUpdates(string currentversion1, string versiontype, Autofac.IContainer container, bool firstRun)
         {
+#if MACOS
+            // See ApplyUpdate for rationale. Silent no-op on Mac builds.
+            return;
+#endif
             _ = Task.Factory.StartNew(() =>
             {
                 IAppDispatcher appDispatcher = null;
@@ -129,6 +139,11 @@ namespace EQTool.Services
 #endif
         public static void CheckForUpdates(string currentversion1, string versiontype, IAppDispatcher appDispatcher, LoggingService loggingService, LoginMiddlemand loginMiddlemand, bool firstRun)
         {
+#if MACOS
+            // See ApplyUpdate for rationale. Silent no-op - do not reach the GitHub API,
+            // the version comparison, the download, or the firstRun MessageBox path.
+            return;
+#endif
             try
             {
                 var prerelease = false;

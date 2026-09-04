@@ -49,6 +49,11 @@ namespace EQTool.Services
         private bool updatecalled = false;
         private void UpdateTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
+#if MACOS
+            // The 60s poll would otherwise call UpdateService.CheckForUpdates and could
+            // silently replace this patched binary mid-session. See UpdateService for details.
+            return;
+#endif
             if (updatecalled)
             {
                 return;
