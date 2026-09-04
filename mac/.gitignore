@@ -1,0 +1,6 @@
+# Wine spike large artifacts — never committed.
+# (evidence-wine/ screenshots ARE committed, same convention as spike/evidence/
+# for the earlier Avalonia spike, so WINE-FINDINGS.md can cite them.)
+spike/wine/EQTool_Linux*.zip
+spike/wine/extracted/
+spike/wine/logs/

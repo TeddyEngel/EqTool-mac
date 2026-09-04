@@ -1,0 +1,45 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="OverlaySpike.MainWindow"
+        Title="OverlaySpike"
+        Width="520" Height="260"
+        SystemDecorations="None"
+        TransparencyLevelHint="Transparent"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        CanResize="False"
+        WindowStartupLocation="Manual">
+  <Border x:Name="MarkerBorder"
+          Background="#CCFF3B30"
+          BorderBrush="#FFFFFFFF"
+          BorderThickness="4"
+          CornerRadius="12"
+          Padding="24"
+          BoxShadow="0 0 24 0 #66000000">
+    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
+      <TextBlock x:Name="TitleText"
+                 Text="OVERLAY SPIKE"
+                 FontSize="42"
+                 FontWeight="Black"
+                 Foreground="White"
+                 HorizontalAlignment="Center"/>
+      <TextBlock x:Name="LevelText"
+                 Text="level=?"
+                 FontSize="20"
+                 FontWeight="Bold"
+                 Foreground="White"
+                 HorizontalAlignment="Center"/>
+      <TextBlock x:Name="ClickState"
+                 Text="clicks: 0"
+                 FontSize="18"
+                 Foreground="White"
+                 HorizontalAlignment="Center"/>
+      <TextBlock x:Name="ModeText"
+                 Text="mode=interactive"
+                 FontSize="14"
+                 Foreground="White"
+                 HorizontalAlignment="Center"/>
+    </StackPanel>
+  </Border>
+</Window>
