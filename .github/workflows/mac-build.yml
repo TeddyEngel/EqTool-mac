@@ -1,0 +1,44 @@
+name: mac-build
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Setup NuGet
+        uses: nuget/setup-nuget@v2
+
+      - name: NuGet restore
+        shell: pwsh
+        run: nuget restore EqTool.sln
+
+      - name: Build EQTool (Mac configuration)
+        shell: pwsh
+        run: msbuild EQTool\EQTool.csproj /p:Configuration=Mac /p:Platform=AnyCPU /m /v:minimal
+
+      - name: Verify EQTool.exe exists
+        shell: pwsh
+        run: |
+          $exe = "EQTool\bin\Mac\EQTool.exe"
+          if (-not (Test-Path $exe)) {
+            Write-Host "::error::Build produced no EQTool.exe at $exe"
+            Get-ChildItem -Recurse EQTool\bin -ErrorAction SilentlyContinue | Select-Object FullName, Length | Format-Table -AutoSize
+            exit 1
+          }
+          Write-Host "Found $exe ($((Get-Item $exe).Length) bytes)"
+
+      - name: Upload EQTool-Mac artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: EQTool-Mac
+          path: EQTool/bin/Mac/
+          if-no-files-found: error
