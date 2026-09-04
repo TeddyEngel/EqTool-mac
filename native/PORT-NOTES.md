@@ -741,3 +741,44 @@ sips -c 1500 1000 --cropOffset 0 0 /tmp/shot.png --out /tmp/window-native.png
 ```
 
 Downscale only for committing evidence, never before judging it.
+
+## Spell icons: scoped, not built
+
+The `SpellIcons` stub returns entries whose `Icon` is null, so nothing renders
+an icon. Three routes were considered; the cheapest is clearly best, but it is
+not worth landing on its own.
+
+**Why upstream's decoder cannot simply be linked.** `EQTool/Services/Spells/SpellIcons.cs`
+reads seven embedded `.tga` resources, decodes them with `TGASharpLib`, and
+converts via `System.Drawing.Bitmap`. `TGASharpLib` is a source file in the
+repo, not a package, so linking it costs nothing in dependencies — but it
+carries 161 lines referencing `System.Drawing`: `PixelFormat` x51, `Color` x48,
+`Bitmap` x21, plus `Rectangle` and `ImageLockMode`. The decode path
+(`FromStream`) is separable from the `ToBitmap`/`ToBitmapFunc` tail, but
+`ToBitmapFunc` does real pixel work through `LockBits`. Shimming that means
+reproducing stride and pixel-format semantics exactly, which is easy to get
+subtly wrong and hard to notice.
+
+**The cheap route.** macOS decodes TGA natively. All seven files convert with
+dimensions preserved:
+
+```bash
+sips -s format png EQTool/Spells/spells01.tga --out spells01.png
+# 256x256 in, 256x256 out, 7 of 7 convert
+```
+
+So the icons can be pre-baked to PNG once, embedded in `EQTool.Core`, and
+loaded by Avalonia's built-in PNG support. No new dependency, no `System.Drawing`
+shim, no pixel-format risk. The cost is a generated artifact in the repository
+that needs regenerating if upstream ever changes the sheets, which is rare.
+
+**Why it was not built now.** Two halves are needed: making icons available,
+and displaying them. The timer rows currently have no icon column, so building
+the loader alone produces code nothing calls — the same trap `MacPathNormalizer`
+briefly fell into. Note also that `SpellIcon.Icon` is typed as the shimmed
+`BitmapSource`, which Avalonia cannot consume directly; the loader should expose
+sheet bytes and sprite geometry and let the Avalonia layer build
+`Avalonia.Media.Imaging.Bitmap` from them, rather than satisfying the WPF type.
+
+Treat this as one piece of work: pre-bake, embed, expose sheet plus geometry,
+add the icon column.
