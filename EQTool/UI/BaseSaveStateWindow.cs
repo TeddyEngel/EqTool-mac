@@ -80,6 +80,9 @@ namespace EQTool.UI
 
             InitCalled = true;
             AdjustWindow();
+            // Init() runs from the child ctor, before the HWND exists - defer the
+            // click-through toggle until SourceInitialized so the handle is real.
+            SourceInitialized += OnSourceInitializedApplyClickThrough;
             timer.Tick += timer_Tick;
             SizeChanged += Window_SizeChanged;
             StateChanged += SpellWindow_StateChanged;
@@ -89,6 +92,11 @@ namespace EQTool.UI
             _transparencyTimer.Tick += OnTransparencyTimerTick;
             windowState.Closed = false;
             SaveState();
+        }
+
+        private void OnSourceInitializedApplyClickThrough(object sender, EventArgs e)
+        {
+            this.ToggleClickThrough(settings.OverlayClickThrough);
         }
 
         private void timer_Tick(object sender, EventArgs e)

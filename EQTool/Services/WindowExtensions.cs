@@ -39,6 +39,9 @@ public static class WindowExtensions
         }
         else
         {
+            // Deliberately asymmetric: we clear WS_EX_TRANSPARENT but leave WS_EX_LAYERED
+            // in place. Every overlay window has AllowsTransparency="True", which requires
+            // WS_EX_LAYERED - stripping it would break WPF's compositor for that window.
             SetWindowLong(hwnd, GWL_EXSTYLE, exStyle & ~WS_EX_TRANSPARENT);
         }
     }
