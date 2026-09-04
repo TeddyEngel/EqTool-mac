@@ -413,8 +413,228 @@ It returns `bool` rather than a string specifically so an unresolvable drive
 letter fails loudly. Returning a best-guess string would reintroduce the
 silent-corruption failure mode this class exists to remove.
 
-### Not yet wired up
+### Where it is called from
 
-Nothing calls this yet — there is no native settings loader to call it from.
-Milestone 2 must run every path read from `settings.json` through it before
-handing anything to `Paths.Combine` or `UIFileName.TryParse`.
+`EQTool.Avalonia`'s `Services/SettingsBootstrap.cs` runs both path settings
+through it immediately after `EQToolSettingsLoad.Load()` and before the Autofac
+container exists. That ordering is forced: `LogParser` starts its 100 ms poll
+inside its own constructor, so by the time it is resolvable the paths must
+already be native.
+
+## Avalonia shell (Milestone 2)
+
+`native/EQTool.Avalonia` is a normal desktop window that tails a real EverQuest
+log file and draws the timers that come out of it. Run it with
+`dotnet run --project native/EQTool.Avalonia`.
+
+Scope is one window. No overlay, no click-through, no transparency, no
+always-on-top — the Wine spike showed opaque overlay pixels swallow clicks on
+both Windows and Wine anyway, so that is a later milestone with its own
+questions to answer.
+
+### Packages
+
+| Package | Version |
+|---|---|
+| `Avalonia`, `Avalonia.Desktop`, `Avalonia.Themes.Fluent` | 11.2.8 |
+| `Avalonia.Diagnostics` (Debug only) | 11.2.8 |
+| `Autofac` | 8.4.0 |
+
+11.2.8 is the version `mac/spike/OverlaySpike` already proved on this machine.
+`net9.0`, `RuntimeIdentifier` `osx-x64`, `ProjectReference` to `EQTool.Core`.
+Not added to `EqTool.sln`.
+
+### Nothing polls the log file
+
+`LogParser` is self-driving. Its constructor creates a `System.Timers.Timer(100)`
+and hooks `Poll`, which resolves the log location through `FindEq`, reads new
+bytes with `FileReader.ReadNext`, and dispatches lines in chunks of 25 through
+`IAppDispatcher`. Resolving it from the container is the whole of "start
+tailing". The only clock the shell owns is a 100 ms `DispatcherTimer` that calls
+`SpellWindowViewModel.UpdateSpells(dt_ms)`, which is what upstream's `UIRunner`
+does at 1000 ms. The shorter interval costs nothing and makes the bars drain
+smoothly instead of stepping.
+
+### `AvaloniaAppDispatcher`
+
+`Services/AvaloniaAppDispatcher.cs` implements `IAppDispatcher` against
+`Dispatcher.UIThread`. `Poll` fires on a thread-pool thread and everything it
+dispatches mutates `ObservableCollection`s that Avalonia is bound to, so those
+updates have to be marshalled.
+
+`DispatchUI` uses a blocking `Invoke`, not `Post`, matching upstream's
+`Dispatcher.Invoke`: a batch of log lines is fully applied before `Poll`
+continues. `TaskCanceledException` is caught and dropped, which is what a
+dispatcher shutdown mid-batch looks like.
+
+`EQTool.Core` is compiled with `TEST` defined, which strips `LogParser.MainRun`'s
+own try/catch. Without a net, one bad log line would take the window down, so
+dispatched work is wrapped and failures are written to stderr.
+
+The stub `AppDispatcher` in `Compat/EqToolStubs.cs` is untouched. The container
+binds `IAppDispatcher` to the Avalonia implementation instead.
+
+### The `DispatcherTimer` shim needed a clock
+
+This was the one genuine bug the milestone turned up, and it only shows on the
+*second* firing of a trigger.
+
+`TriggerTimerManager` builds a `System.Windows.Threading.DispatcherTimer` in its
+constructor and prunes its `activeTimers` list from the Tick. The shim in
+`Compat/WindowsShims.cs` never ticked, so nothing was ever pruned. On a second
+match, `HandleTimerMatch` found the stale entry, took the `RestartTimer` branch,
+and updated a `TimerViewModel` that `UpdateSpells` had already removed from the
+spell list. `TryAdd` is only on the new-timer path, so the row never came back.
+Silently.
+
+The fix is an opt-in host:
+
+```csharp
+public interface IDispatcherTimerHost
+{
+    IDisposable Schedule(TimeSpan interval, Action onTick);
+}
+
+public class DispatcherTimer
+{
+    public static IDispatcherTimerHost Host { get; set; }
+    // Start() subscribes through Host, if one is installed.
+}
+```
+
+`AvaloniaDispatcherTimerHost.Install()` points it at
+`Avalonia.Threading.DispatcherTimer`, so ticks land on the UI thread exactly as
+WPF delivers them. With no host installed the shim is inert, so the test run is
+byte-for-byte unaffected: a live background timer firing trigger output in the
+middle of assertions is not something the suite should have to tolerate.
+
+Screenshots `04` and `05` are the before and after of this: Dragon Roar expires
+and vanishes, then comes back at 32s when the trigger fires again.
+
+### Container
+
+`Services/NativeContainer.cs` follows `EQtoolsTests/DI.cs`, the only non-WPF
+composition upstream has. Parsers and handlers are discovered by reflection the
+same way, so a new upstream parser is picked up by a rebuild. Two differences:
+
+- The assembly comes from `typeof(LogParser).Assembly` rather than
+  `AppDomain.CurrentDomain.GetAssemblies()`, because `EQTool.Core` may not be
+  loaded yet at composition time.
+- `FileReader` is registered `AsSelf().As<IFileReader>()` as one singleton. It
+  carries the tail offset; `LogParser` takes the concrete type and handlers take
+  the interface, and two instances would read the file from two positions.
+
+`ITextToSpeach` binds to a no-op. Upstream's `TextToSpeach` needs
+`System.Speech.Synthesis`, and spoken alerts are not part of this milestone.
+
+### Settings and the log folder
+
+`SettingsBootstrap.Load()` calls `EQToolSettingsLoad.Load()` (so `settings.json`
+resolution, built-in trigger sync and all the rest behave as they do upstream),
+then hands both path settings to `MacSettingsPathResolver`. The Wine prefix
+comes from `WinePrefixLocator`: `PIGPARSE_WINEPREFIX`, then `WINEPREFIX`, then
+`~/.wine-pigparse`, then `~/.wine`.
+
+A path that cannot be resolved is left alone and reported, and the window shows
+a plain-language band saying so, with the folder picker as the remedy. The three
+messages are:
+
+- the saved folder was written for Windows and cannot be found here
+- no folder has been chosen yet
+- the saved folder is gone
+
+`settings.json` lives next to the executable, which upstream computes through
+`Paths.InExecutableDirectory`. On this build that lands inside
+`bin/Debug/net9.0/osx-x64/`, so it is wiped by a `clean`. A proper
+`~/Library/Application Support` location belongs with app packaging.
+
+### The window
+
+`Theme/DesignTokens.axaml` holds every colour, spacing value, type size, radius
+and font family the views use. Views carry no literal values, so the next screen
+can only be consistent with this one.
+
+The direction is an instrument panel rather than a document: near-black
+blue-grey ground, hairline rules, amber as the signal colour and mint as the
+"a character is being followed" colour. That keeps it in the same family as
+`Example.png` (dark, compact, coloured bars that drain, name left and countdown
+right) while fixing the thing that made the original hard to read: upstream
+paints dark text directly on the coloured fill, so a half-drained bar leaves
+half the label on a dark background. Here the fill sits at 30% alpha behind the
+text, with the accent at full strength in a 3px spine down the left edge, so the
+label reads the same at 100% and at 5%.
+
+Countdowns are set in Menlo so the digits do not jitter as they tick, and turn
+rose under ten seconds.
+
+Rows cover `Timer`, `Spell` and `Roll`. Boats and counters share the same
+collection upstream but neither is a countdown the player started: boats are
+always present and cycle forever, counters have no duration. Neither belongs in
+a list of what is running right now.
+
+### Verification
+
+`dotnet build native/EQTool.Avalonia -warnaserror`:
+
+```
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+```
+
+`dotnet test native/EQTool.Core.Tests`, run after the `WindowsShims` change:
+
+```
+Failed!  - Failed: 28, Passed: 416, Skipped: 0, Total: 444, Duration: 1 m 3 s
+```
+
+Unchanged from the Milestone 1.5 baseline. The 28 are the Windows-shaped path
+test data documented above.
+
+`git diff --stat HEAD -- EQTool EQToolShared EQToolApis EQtoolsTests EqTool.sln README.md LICENSE` is empty.
+
+### Evidence
+
+In `native/evidence/`, each inspected against the claim it supports and each
+with a distinct MD5. Captured against
+`~/.wine-pigparse/drive_c/EQ/Logs/eqlog_Sisytest_P1999Green.txt`, driven by
+appending `You flee in terror.` (the built-in Dragon Roar trigger, 36 seconds)
+and two `PigTimer` lines.
+
+| File | Shows |
+|---|---|
+| `01-empty-state.png` | "Watching your log", character `Sisytest · Green`, log file name in the header |
+| `02-timers-live.png` | Four rows three seconds after firing: Dragon Roar `You` 2s, Dragon Roar `Custom Timer` 32s, Sebilis_Pull 2m 56s, Ring_Roll 1m 26s |
+| `03-timers-ten-seconds-later.png` | Same window ten seconds on: Dragon Roar 22s, Sebilis_Pull 2m 46s, Ring_Roll 1m 16s. The 2s row has expired and gone |
+| `04-dragon-roar-expired.png` | Dragon Roar absent after its 36 seconds; the two PigTimers still running |
+| `05-dragon-roar-refired.png` | Dragon Roar back at 32s after a second `You flee in terror.` |
+| `06-log-folder-picker.png` | The native folder panel, titled "Choose your EverQuest Logs folder" |
+| `07-log-folder-missing.png` | The notice band with an unreachable log folder, character line greyed to "No character detected yet" |
+| `08-desktop.png` | The window in place on the desktop |
+
+### What surprised me
+
+- The repeat-fire bug was invisible from a single trigger. Every screenshot of a
+  first firing looked correct, and the app had been running for twenty minutes
+  before a second firing exposed it. It would have shipped.
+- Avalonia's Fluent `ProgressBar` carries a short fixed height and centres
+  itself, so a templated fill renders as a 4px stripe floating in the middle of
+  the row rather than filling it. `MinHeight="0"` plus
+  `VerticalAlignment="Stretch"` fixes it, and the first evidence run caught it.
+- `using Avalonia.Media;` cannot appear inside `namespace EQTool.Avalonia.*`:
+  the compiler resolves `Avalonia` against the enclosing `EQTool.Avalonia` and
+  fails. File-level using directives resolve from global and are fine, but any
+  qualified reference in that namespace needs `global::`.
+- `CustomTimer.CustomerTime` is `"  Custom Timer"` with two leading spaces, and
+  `UpdateSpells` uses `!GroupName.StartsWith(" ")` to decide whether a timer row
+  is hideable. Trigger timers are visible because of those spaces.
+
+### Not done
+
+- Spell icons are still null. The `SpellIcons` stub returns entries with no
+  bitmap, so rows carry no icon. Follow-up 1 from Milestone 1 stands.
+- No grouping headers. Upstream groups rows by `GroupName` through a WPF
+  `ListCollectionView`, which the shim is a no-op for. Rows here sit in
+  insertion order with the group as a label on the row.
+- No text to speech, no audio, no tray icon, no settings screen.
+- `settings.json` still lives in the build output.
