@@ -170,27 +170,188 @@ are not added to it, per the milestone constraints.
   long as the `LogicalName` matches. This avoids re-embedding the raw `.txt`
   files.
 
+## Upstream test suite
+
+`EQtoolsTests/` has 42 `.cs` files. 2 are infrastructure (`BaseTestClass.cs`,
+`DI.cs`), 39 carry `[TestMethod]`s, and 1 (`AssemblyBindingFixture.cs`) is
+.NET Framework binding-redirect machinery. All 41 non-fixture files are
+linked into `native/EQTool.Core.Tests` unedited via
+`<Compile Include="..\..\EQtoolsTests\...cs" Link="Upstream\..." />`.
+
+To make the linked set compile and run, the following additions were made:
+
+- `EQTool.Core` linked-set extension: `EQTool/Services/Handlers/**/*.cs`,
+  `LogParser.cs`, `EQToolSettingsLoad.cs`, `FindEq.cs`, `BoatScheduleService.cs`,
+  `PigParseApi.cs`, `AudioService.cs`, `SavePlayerStateService.cs`,
+  `InstallPathChecker.cs`, `PlayerTrackerService.cs`, `TriggerActionExecutor.cs`,
+  `TriggerTimerManager.cs`, `TriggerTestSampleGenerator.cs`, `CHService.cs`,
+  `WikiApi.cs`, `IO/FileReader.cs`, `Spells/SpellUIExtensions.cs`,
+  the real `SpellWindowViewModel.cs`, `SpawnTimerDialogViewModel.cs`,
+  `DPSWindowViewModel.cs`, `EntittyDPS.cs`, `PetViewModel.cs`,
+  `SpellWindow/**/*.cs`, and `Models/Pets.cs`.
+- `Compat/WindowsShims.cs` was extended with the WPF surface these files
+  reference: the full `Brushes` palette used across handlers/viewmodels
+  (with `Brushes.*` typed as `SolidColorBrush` to satisfy assignments to
+  `BaseTriggerViewModel.ProgressBarColor`), `Colors`, `Point`,
+  `LinearGradientBrush`, `GradientStop`, `GradientStopCollection`,
+  `MediaPlayer`, `System.Windows.Data.CollectionViewSource` +
+  `ListCollectionView` + `PropertyGroupDescription` + `SortDescription` +
+  `IValueConverter` + `Binding.DoNothing`, `System.Windows.Controls.ValidationRule`
+  + `ValidationResult` + `UserControl`, `System.Windows.Threading.DispatcherTimer`,
+  and an empty `System.Windows.Documents` namespace so unused `using`s resolve.
+  The `BrushConverter` shim now parses named colors (via a
+  `NamedColors` table covering every value used in the codebase) and `#RRGGBB` /
+  `#AARRGGBB` hex, so `TriggerColors.ToBrush("HotPink", ...)` returns the
+  actual pink and not a default-constructed `SolidColorBrush`.
+- `Compat/EqToolStubs.cs` was extended with `App.httpclient` (real
+  `HttpClient`, so `PigParseApi`'s try/catch swallows network failures
+  cleanly at test time), a no-op `App.LogUnhandledException`, an `ITextToSpeach`
+  interface (so `BaseHandler`'s `textToSpeach` parameter binds — the real
+  `TextToSpeach.cs` uses `System.Speech.Synthesis.SpeechSynthesizer` which
+  needs the Windows-only `System.Speech` reference), a `ForegroundWindowHelper`
+  stub whose `IsEqGameFocused()` returns `false` (real one calls `user32.dll`
+  via P/Invoke), a `SpellIcons` stub that returns one `SpellIcon` per spell
+  file (indices 1..7) so `EQSpells.BuildSpellInfo` no longer skips every
+  spell as `HasSpellIcon == false`, and minimal `MobInfoManagementViewModel`
+  / `SettingsWindowViewModel` / `MobInfoItemType` shims that expose only the
+  members the linked handlers touch (respectively `MobInfoItemType` for
+  `ConHandler` and `GroupLeaderName` for `GroupLeaderHandler`).
+- Test-resource plumbing: `spells_us.txt`, `DiscordResponse.json`, and
+  `LogFiles/log1.txt` are `Content Include`'d from `EQtoolsTests/`, and an
+  `AfterTargets="Build"` target copies them one level up from
+  `bin/Debug/net9.0/` to `bin/`. This mirrors where upstream's
+  `DI.cs:99` (`Directory.GetParent(Paths.ExecutableDirectory()).Parent.FullName`)
+  points `EQToolSettings.DefaultEqDirectory`.
+- MSTest was bumped from 3.6.4 to 4.0.2 (and `Microsoft.NET.Test.Sdk` from
+  17.11.1 to 18.0.1) to match `EQtoolsTests/packages.config`. The upstream
+  tests use `Assert.HasCount(...)` and `Assert.IsNotEmpty(...)`, which are
+  only in MSTest 4.
+- `Autofac 8.4.0` is pinned exactly, matching upstream.
+
+### Results
+
+```
+Passed: 398, Failed: 28, Skipped: 0, Total: 426, Duration: 46 s
+```
+
+The 13 hand-written tests from Milestone 1 are still linked and still pass.
+The remaining 413 are from the upstream suite.
+
+Failure categorisation:
+
+| Category | Count | Notes |
+|---|---|---|
+| (a) genuine port bug | 0 | |
+| (b) inherently Windows-only, excluded from link | 0 | All 41 non-fixture files link and run |
+| (c) culture / environment divergence | 28 | Detailed below |
+
+### Files excluded from linking
+
+| Upstream file | Reason |
+|---|---|
+| `EQtoolsTests/AssemblyBindingFixture.cs` | The file's own header comment says it exists because "MSTest v4 no longer runs .NET Framework tests in a per-assembly AppDomain, so the binding redirects in `app.config` are never applied." It installs a .NET Framework `AppDomain.CurrentDomain.AssemblyResolve` handler to serve dependency DLLs from the output folder. `net9.0` uses `AssemblyLoadContext`, not `AppDomain`, and the SDK-style build already places every dependency where it can be resolved. There is nothing this fixture would fix here. |
+
+### Category (c) — culture / environment divergence
+
+All 28 remaining failures are in this bucket. None indicate the parser
+disagrees with itself between Windows and macOS; they indicate the test
+data is Windows-shaped and passes through platform-conditional APIs.
+
+**`PathsTests.cs` — 27 failures.**
+`SimplePathCombineTests` × 9, `ProgramPathCombineTests` × 9, and
+`DirectoryCombineTests` × 9 all exercise `EQToolShared.Extensions.Paths.Combine`
+with Windows-style inputs (e.g. `"C:\\Everquest\\"`, `"\\eqclient.ini"`),
+and their `Assert.AreEqual` expectations are built as
+`$"C:{Path.DirectorySeparatorChar}Everquest{Path.DirectorySeparatorChar}eqclient.ini"`.
+`Paths.Combine` does:
+
+```csharp
+return path1.Trim().TrimEnd(Path.DirectorySeparatorChar)
+                   .TrimEnd(Path.AltDirectorySeparatorChar)
+    + Path.DirectorySeparatorChar
+    + path2.Trim().TrimStart(Path.DirectorySeparatorChar)
+                  .TrimStart(Path.AltDirectorySeparatorChar);
+```
+
+On Windows: `DirectorySeparatorChar = '\\'`, `AltDirectorySeparatorChar = '/'`.
+Both slashes get trimmed off the input, the join uses `\\`, and the expected
+string is `"C:\\Everquest\\eqclient.ini"` — which matches.
+
+On macOS/.NET 9: `DirectorySeparatorChar = '/'`, `AltDirectorySeparatorChar = '/'`.
+`\` is not a separator, so `TrimEnd`/`TrimStart` do not touch it; the join
+uses `/`. `Paths.Combine("C:\\Everquest\\", "eqclient.ini")` therefore
+returns `"C:\\Everquest\\/eqclient.ini"` while the test expects
+`"C:/Everquest/eqclient.ini"`.
+
+Both outputs are correct for the platform they run on. On macOS the parser
+will never see a `C:\...` path (log lines carry the log directory the user
+configured, which will be a POSIX path), so the divergence is confined to
+this test's synthetic Windows-shaped inputs. It is worth flagging for the
+Milestone 2 native settings loader: if the settings JSON round-trips a
+saved Windows install path onto macOS, `Paths.Combine` will produce a mixed
+`\`/`/` string. The join code is fine for POSIX-shaped inputs.
+
+**`UIFileNameTests.cs::ParsesFullPath` — 1 failure.**
+`UIFileName.TryParse` uses `System.IO.Path.GetFileName` to strip a leading
+directory from `"C:\\Everquest\\UI_Pigy_P1999Green.ini"`. On Windows,
+`GetFileName` splits on both `\` and `/` and returns
+`"UI_Pigy_P1999Green.ini"`. On macOS, `GetFileName` only splits on `/`, so
+the whole string is treated as the "file name" and the parser then extracts
+`"C:\\Everquest\\UI_Pigy"` as the player name. Same shape as the
+`PathsTests` divergence: the code's contract quietly says "call me with
+paths using the current platform's separators", the test's input assumes
+Windows. On macOS the code will only ever be handed POSIX paths, so this is
+also a test-data mismatch rather than a functional bug.
+
+### What surprised me
+
+- The single change that took failures from 145 to 31 was placing
+  `spells_us.txt` and `DiscordResponse.json` at
+  `bin/` (via the `AfterTargets="Build"` copy) rather than only at
+  `bin/Debug/net9.0/`. `DI.cs` computes `DefaultEqDirectory` two levels
+  above the executable, which lands at `bin/` on this SDK-style build.
+  Getting the resource path right unlocked ~114 tests in one shot, all of
+  which had been failing because `EQSpells` had no spells to look up.
+- `BaseTestClass.cs` does `datetime.ToString("G")` followed by
+  `DateTime.Parse(d)` (culture-sensitive, ICU on .NET 9 vs NLS on
+  .NET Framework), and I had marked that as a plausible category (c)
+  source. In practice zero tests failed on it under the invariant-ish
+  behaviour of the default `en-US` culture on this box. That does not mean
+  the risk is gone: a run under a culture whose `"G"` format is not
+  round-trippable (e.g. `de-DE`) would very likely start dropping spells
+  through the fast-forward loop in `LogParserExtention.Push`. Worth
+  guarding once the native UI can set culture.
+- Sixteen tests in `TriggerColorsTests.cs` initially failed with "these
+  palette colors are too dark" / "too similar" because the stub
+  `BrushConverter.ConvertFromString(name)` returned a default-constructed
+  `SolidColorBrush` (RGB 0,0,0) regardless of the name. Every entry in the
+  palette resolved to black, so all pairs were identical and all failed
+  the >= 0.10 luminance floor. Fixed by giving the shim a real
+  `NamedColors` lookup + `#RRGGBB`/`#AARRGGBB` hex parsing.
+
 ## Follow-ups for Milestone 2
 
-Milestone 1 proves the parsers run on `net9.0` on macOS. Milestone 2 should
-be UI-shaped, not parser-shaped. Concrete next steps in priority order:
+Milestone 1 proves the parsers run on `net9.0` on macOS; Milestone 1.5
+proves the upstream test suite (398/426) runs against them unedited.
+Milestone 2 should be UI-shaped. Concrete next steps in priority order:
 
-1. Native `SpellIcons` replacement. The stub returns an empty list, which
-   means `EQSpells.BuildSpellInfo` skips every spell (`HasSpellIcon` is
-   `false`). Either read the `.tga` resources with a cross-platform decoder
-   (e.g. Pfim + `SkiaSharp`) or ship pre-baked PNGs and drop the icon step
-   at load time.
+1. Native `SpellIcons` replacement. The stub now returns one `SpellIcon`
+   per file so `EQSpells.BuildSpellInfo` populates `AllSpells`, but every
+   returned `SpellIcon.Icon` is null — no `BitmapSource` payload. A native
+   UI will need real bitmaps. Either read the `.tga` resources with a
+   cross-platform decoder (e.g. Pfim + `SkiaSharp`) or ship pre-baked PNGs.
 2. Real `IAppDispatcher` bound to whatever UI toolkit Milestone 2 picks
    (Avalonia is already spiked under `mac/spike/`).
-3. Wire a log-tail loop that pushes lines through the linked `LogParser` at
-   `EQTool/Services/LogParser.cs`. That file is not linked yet — it pulls in
-   handlers and settings I have not audited. Do that audit as the first step
-   of Milestone 2.
-4. Reuse upstream `EQtoolsTests/` where possible. The tests use Autofac and
-   `Microsoft.VisualStudio.TestTools.UnitTesting` (MSTest), both of which
-   work on .NET 9. What blocks reuse today is that `BaseTestClass` resolves a
-   full DI graph including `SpellWindowViewModel` etc., which drags in
-   WPF-heavy types we deliberately do not link. A future test project can
-   link only the parser-focused test files (e.g. `DamageParserTests.cs`,
-   `ZoneParsingTests.cs`, `FactionParserTests.cs`, `ParsingTests.cs`) once a
-   headless DI container is available.
+3. `Paths.Combine` and `UIFileName.TryParse` divergence: acceptable as
+   long as the native settings loader never round-trips a Windows-shaped
+   install path onto macOS. If it must (e.g. importing settings from an
+   existing Wine install), add an explicit normalisation step ahead of
+   `Paths.Combine`.
+4. The 12 handler-level SpellWindow tests
+   (`SpellCounterTests`, `SpellMatchingTests`, `SpellViewModelTests`,
+   `SpellWornOffOtherTests`, `SlainHandlerTests`, `CustomTimerHandlerTests`,
+   `ItemBeginsToGlowTests`, `DeathTouchTriggerTests`, `DragonEffectTests`,
+   `SpellAdaptiveGroupingTests`) all pass here against the real linked
+   `SpellWindowViewModel`. Milestone 2 should keep them running as it
+   swaps in the native UI shell for `SpellWindowViewModel`'s WPF
+   consumers.
