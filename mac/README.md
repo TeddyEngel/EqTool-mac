@@ -16,10 +16,11 @@ What has not been checked matters just as much:
 
 You need Homebrew and Wine. Testing was done on macOS 14.8.8 Sonoma on Intel x86_64. Other versions and Apple Silicon may well work, but nobody has tried.
 
-Install Wine and Winetricks using Homebrew:
+Wine ships as a Homebrew cask and Winetricks as a formula, so they install with two separate commands. Running them together fails.
 
 ```bash
-brew install wine-stable winetricks
+brew install --cask wine-stable
+brew install winetricks
 ```
 
 ## Setup
@@ -61,8 +62,11 @@ unzip EQTool_Linux*.zip -d "$WINEPREFIX/drive_c/PigParse"
 
 5. Start the application.
 
+Change into the application folder first. PigParse writes its error log relative to whatever directory you launch it from, so starting it elsewhere scatters those files around your disk.
+
 ```bash
-WINEPREFIX="$HOME/.wine-pigparse" wine "$HOME/.wine-pigparse/drive_c/PigParse/EQTool.exe"
+cd "$WINEPREFIX/drive_c/PigParse"
+wine EQTool.exe
 ```
 
 ## First-run configuration
@@ -104,11 +108,13 @@ Confirm that EverQuest is actively writing to a log file. Check that `eqclient.i
 
 ### Finding errors
 
-PigParse writes failures to `Errors.txt` next to the executable. Your terminal session also carries Wine's own output, which is usually noisier but occasionally more revealing.
+PigParse writes failures to `Errors.txt`. The file appears only once something has actually gone wrong, so its absence is a good sign rather than a problem. It lands in whatever directory you launched from, which is why the setup step has you `cd` into the application folder first.
 
 ```bash
-cat "$HOME/.wine-pigparse/drive_c/PigParse/Errors.txt"
+cat "$WINEPREFIX/drive_c/PigParse/Errors.txt"
 ```
+
+Your terminal session also carries Wine's own output. It is noisier, but occasionally says more.
 
 Your configuration lives in `settings.json` in the same folder. Deleting that file resets the app to first-run state, which is a quick way out of a broken configuration.
 
