@@ -123,8 +123,8 @@
              piece of visual signature at this size. -->
         <Border Grid.Row="0" Grid.Column="0"
                 Width="{StaticResource SizeSpineWidth}"
-                Height="20"
-                Margin="0,0,10,0"
+                Height="{StaticResource SizeBrandSpineHeight}"
+                Margin="{StaticResource GapSpine}"
                 VerticalAlignment="Center"
                 CornerRadius="{StaticResource RadiusRow}"
                 Background="{StaticResource BrushSignalAmber}" />
@@ -141,7 +141,7 @@
                 Content="Log folder…" />
 
         <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
-              Margin="0,10,0,0"
+              Margin="{StaticResource GapHeaderMeta}"
               ColumnDefinitions="Auto,*">
           <TextBlock Classes="meta"
                      Classes.live="{Binding HasCharacter}"
@@ -149,7 +149,7 @@
                      Text="{Binding CharacterLine}" />
           <TextBlock Classes="meta"
                      Grid.Column="1"
-                     Margin="12,0,0,0"
+                     Margin="{StaticResource GapHeaderMetaSource}"
                      HorizontalAlignment="Right"
                      Text="{Binding SourceLine}" />
         </Grid>
@@ -167,7 +167,7 @@
       <Grid ColumnDefinitions="Auto,*">
         <Border Grid.Column="0"
                 Width="{StaticResource SizeSpineWidth}"
-                Margin="0,0,12,0"
+                Margin="{StaticResource GapSpine}"
                 CornerRadius="{StaticResource RadiusRow}"
                 Background="{StaticResource BrushSignalAmber}" />
         <TextBlock Grid.Column="1"
@@ -185,12 +185,12 @@
       <ScrollViewer IsVisible="{Binding HasRows}"
                     HorizontalScrollBarVisibility="Disabled"
                     VerticalScrollBarVisibility="Auto"
-                    Padding="{StaticResource InsetPanel}">
+                    Padding="{StaticResource InsetList}">
         <ItemsControl ItemsSource="{Binding Rows}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:TimerRowViewModel">
               <Border Height="{StaticResource SizeRowHeight}"
-                      Margin="0,0,0,4"
+                      Margin="{StaticResource GapRow}"
                       CornerRadius="{StaticResource RadiusRow}"
                       Background="{StaticResource BrushSurfaceRow}"
                       ClipToBounds="True">
@@ -215,7 +215,7 @@
                                Text="{Binding Name}" />
                     <TextBlock Grid.Column="1"
                                Classes="rowgroup"
-                               Margin="12,0,12,0"
+                               Margin="{StaticResource GapRowGroup}"
                                Text="{Binding GroupName}" />
                     <TextBlock Grid.Column="2"
                                Classes="countdown"
@@ -236,8 +236,8 @@
                   HorizontalAlignment="Center"
                   VerticalAlignment="Center"
                   Margin="{StaticResource InsetHeader}"
-                  Spacing="8">
-        <Border Width="40"
+                  Spacing="{StaticResource Space3}">
+        <Border Width="{StaticResource SizeEmptyRule}"
                 Height="{StaticResource SizeSpineWidth}"
                 HorizontalAlignment="Center"
                 CornerRadius="{StaticResource RadiusRow}"
@@ -249,7 +249,7 @@
                    Foreground="{StaticResource BrushTextSecondary}"
                    Text="Watching your log" />
         <TextBlock HorizontalAlignment="Center"
-                   MaxWidth="280"
+                   MaxWidth="{StaticResource SizeEmptyProseWidth}"
                    TextAlignment="Center"
                    TextWrapping="Wrap"
                    FontFamily="{StaticResource FontUI}"

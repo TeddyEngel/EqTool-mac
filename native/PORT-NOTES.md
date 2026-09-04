@@ -572,6 +572,80 @@ collection upstream but neither is a countdown the player started: boats are
 always present and cycle forever, counters have no duration. Neither belongs in
 a list of what is running right now.
 
+### Density pass
+
+The first cut of this window was laid out like a desktop app: 30pt rows with 5pt
+of vertical padding, a 4pt gap between them, and a 101pt header. That fits
+fifteen timers in a 640pt window. A raid regularly runs more than fifteen, and
+this window sits next to a live EverQuest client where scrolling to find a timer
+mid-fight is not a real option.
+
+The row pitch is now 19pt (18pt row, 1pt gap) and the header is 78pt, which fits
+twenty-nine rows at the same window height. Screenshots `09` and `10` are the
+before and after, both captured at 440x640 against the same firing sequence.
+
+| Token | Was | Now |
+|---|---|---|
+| `SizeRowHeight` | 30 | 18 |
+| row margin | literal `0,0,0,4` in the view | `GapRow` = `0,0,0,1` |
+| `InsetRow` | `10,5,10,5` | `8,0,8,0` |
+| `RadiusRow` | 3 | 2 |
+| `TypeRow` (name) | 14 | 12 |
+| `TypeCountdown` | 15 | 13 |
+| `TypeMicro` (group label) | 10 | 9 |
+| `TypeTitle` (brand) | 24 | 20 |
+| `TypeHeading` (empty state) | 18 | 16 |
+| `TypeBody` | 13 | 12 |
+| `InsetHeader` | `16,12,16,12` | `14,8,14,8` |
+| `InsetButton` | `12,6,12,6` | `10,4,10,4` |
+| list padding | `InsetPanel` = 12 | `InsetList` = `10,4,10,4` |
+| `SizeCountdownColumn` | 92 | 68 |
+
+Rows no longer carry a vertical inset of their own. `SizeRowHeight` sets the
+pitch and the contents centre inside it, so there is one number to change
+instead of two that can disagree.
+
+The type scale keeps its order: countdown at 13pt, name at 12pt, group label at
+9pt. That order is the whole point. The countdown is what gets read under
+pressure; the group is context the player already has.
+
+`SizeCountdownColumn` came down to 68 because the widest string the formatter
+can produce is `1h 2m 3s`, which is eight characters of 13pt Menlo. The 24pt it
+gave back went to the name.
+
+Two of the obvious levers had nothing left to give. The fill was already the row
+background rather than a separate bar with its own vertical space, and the name
+and countdown were already on one line.
+
+Where I stopped short:
+
+- Row height stopped at 18, not 17. A 12pt Avenir Next Condensed line box is
+  about 16pt, so 18 leaves roughly a point of clearance top and bottom. 17 would
+  have bought one more row and spent all the clearance to get it. The
+  descenders in `Ramp_Swap` and `Sky_Ring_War` are the ones to check.
+- `SizeSpineWidth` stayed at 3. At an 18pt pitch with a 1pt gap the accent
+  spines nearly join into a continuous ribbon down the left edge, which is close
+  to what `Example.png` does, and the spine is the row's only full-strength
+  colour once the fill has drained.
+- `RadiusRow` at 2 rather than 0. Square corners would have read as one solid
+  block at this pitch; 2pt is enough to keep the rows separable without opening
+  a visible gap.
+
+Build and tests after the change:
+
+```
+dotnet build native/EQTool.Avalonia -warnaserror
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+dotnet test native/EQTool.Core.Tests
+Failed!  - Failed: 28, Passed: 422, Skipped: 0, Total: 450, Duration: 55 s
+```
+
+Unchanged from the baseline. Nothing under `EQTool.Core/` was touched; this is
+`Theme/DesignTokens.axaml` and `Views/MainWindow.axaml` only.
+
 ### Verification
 
 `dotnet build native/EQTool.Avalonia -warnaserror`:
@@ -611,6 +685,9 @@ and two `PigTimer` lines.
 | `06-log-folder-picker.png` | The native folder panel, titled "Choose your EverQuest Logs folder" |
 | `07-log-folder-missing.png` | The notice band with an unreachable log folder, character line greyed to "No character detected yet" |
 | `08-desktop.png` | The window in place on the desktop |
+| `09-density-before.png` | The spacious layout at capacity: fifteen full rows in a 640pt window, a sixteenth clipped |
+| `10-density-after.png` | The same window height after the density pass: twenty-nine full rows, a thirtieth clipped |
+| `11-density-empty-state.png` | The empty state and the tightened header |
 
 ### What surprised me
 
