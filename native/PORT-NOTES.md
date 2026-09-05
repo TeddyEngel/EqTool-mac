@@ -2008,3 +2008,37 @@ It is moved to `settings.json.superseded` beside the canonical file now. The
 existing test for this case asserted only that the canonical file kept its
 contents and said nothing about the other, which is why the delete sat there
 unnoticed; the new test asserts the superseded content survives.
+
+### Redirecting a pipe nobody reads
+
+Hunting the category the settings redirect fell into: a comment stating an
+intent the code below does not carry out. `ProcessLauncher` had one.
+
+Its comment says nothing there may block, and that each process disposes itself
+on exit rather than accumulating handles across a session. The code redirects
+both standard output and standard error, and reads neither.
+
+A child that fills the pipe buffer blocks on write and stays blocked. It never
+exits, so `Exited` never fires, so the handle is never released and the stuck
+child stays too. Both promises fail together, and they fail in the same case.
+
+Measured rather than reasoned about. The same child writing 200KB:
+
+```
+redirect=true    exited within 4s = false
+redirect=false   exited within 4s = true
+```
+
+For `say` and `afplay` the output is a few bytes, so this was latent rather than
+biting. It is still worth removing, because the redirect had no upside at all:
+nothing read the pipes, so the only thing it contributed was the condition for
+the deadlock.
+
+Both pipes are drained now with empty handlers, which keeps the child's output
+off the terminal without the risk. `Start` is also wrapped, since a missing
+executable throws and these calls come from the log parse thread during combat,
+where an escaping exception stops parsing.
+
+The tests launch a child that writes past the buffer and touch a sentinel file
+afterwards, so completion is observable from outside the launcher. The waits are
+bounded, so a regression fails the test rather than hanging the suite.
