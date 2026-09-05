@@ -1,3 +1,4 @@
+using System;
 using EQTool.Avalonia.Services;
 using EQTool.Core.Platform;
 using EQTool.Models;
@@ -65,7 +66,7 @@ namespace EQTool.Avalonia.ViewModels
         private const string VoiceSampleText = "Dragon Roar incoming";
 
         private readonly EQToolSettings settings;
-        private readonly EQToolSettingsLoad loader;
+        private readonly Action persist;
         private readonly ITextToSpeach speech;
 
         public SettingsWindowViewModel() : this(AppServices.Initialize())
@@ -73,13 +74,27 @@ namespace EQTool.Avalonia.ViewModels
         }
 
         public SettingsWindowViewModel(AppServices services)
+            : this(services.Bootstrap.Settings,
+                   () => services.Bootstrap.Loader.Save(services.Bootstrap.Settings),
+                   services.Resolve<ITextToSpeach>(),
+                   new TriggerEditorViewModel(services))
         {
-            settings = services.Bootstrap.Settings;
-            loader = services.Bootstrap.Loader;
-            speech = services.Resolve<ITextToSpeach>();
+        }
+
+        // Persistence arrives as an action rather than the concrete loader, so the
+        // round-trip behaviour can be exercised without writing to disk.
+        public SettingsWindowViewModel(
+            EQToolSettings settings,
+            Action save,
+            ITextToSpeach speech,
+            TriggerEditorViewModel triggerEditor)
+        {
+            this.settings = settings;
+            this.persist = save ?? (() => { });
+            this.speech = speech;
 
             Voices = MacVoiceCatalog.Available().Select(a => a.Name).ToList();
-            TriggerEditor = new TriggerEditorViewModel(services);
+            TriggerEditor = triggerEditor;
 
             WindowPreferences = new List<WindowPreferenceViewModel>
             {
@@ -175,7 +190,7 @@ namespace EQTool.Avalonia.ViewModels
 
         private void Save()
         {
-            loader.Save(settings);
+            persist();
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
