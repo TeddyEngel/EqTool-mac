@@ -1046,3 +1046,48 @@ here because it needs a real P99 login attempt to exercise.
 
 The Player tab is the inventory viewer and depends on Discord login, so it
 follows that decision. The Server tab is 17 lines and can land whenever.
+
+### The overlay interop: what is verified, and why the last step resists automation
+
+The click-through path is covered in layers. Working outwards:
+
+- `MacOSWindowInteropTests` checks the selectors exist on `NSWindow` using
+  `class_getInstanceMethod`. This matters because `sel_registerName` *registers*
+  an unknown selector rather than failing, so a misspelling yields a live
+  selector that nothing responds to and a call that silently does nothing. One
+  test registers a deliberate typo to show the check would catch it.
+- `OverlayRenderTests` covers the parts that are ordinary Avalonia state: no
+  window chrome, the drag handle staying hit-test visible while the content
+  panels do not, the opacity clamp, and always-on-top.
+- The guard tests confirm the interop declines rather than throwing when there
+  is no `NSWindow` behind a window.
+
+**The setters do take effect on a real NSWindow.** Verified directly, with no
+display awake, by creating an off-screen `NSWindow` and reading the properties
+back:
+
+```
+NSWindow created:                     ok
+ignoresMouseEvents after set TRUE:    True
+ignoresMouseEvents after set FALSE:   False
+level after set 27:                   27
+```
+
+**That check cannot live in the test suite.** Creating the window from a test
+crashes the host outright:
+
+```
+Terminating app due to uncaught exception 'NSInternalInconsistencyException',
+reason: 'NSWindow should only be instantiated on the main thread!'
+```
+
+MSTest runs tests on worker threads, and the crash aborts the entire run rather
+than failing one test, so it would take the other 84 with it. The manual probe
+succeeded only because it ran on the process's main thread. Attempting this
+again inside MSTest will reproduce the crash; it needs a main-thread test host,
+which is not worth building for one assertion.
+
+**What is genuinely unverified** is narrower than "click-through works": it is
+whether the window server routes a real click to the window underneath. Every
+layer beneath that is covered. Observing it needs a visible window and a real
+click on an awake screen.
