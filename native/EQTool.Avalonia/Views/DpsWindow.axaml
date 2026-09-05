@@ -14,14 +14,14 @@
 
     <Style Selector="TextBlock.eyebrow">
       <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
-      <Setter Property="FontSize" Value="{StaticResource TypeMicro}" />
+      <Setter Property="FontSize" Value="{DynamicResource TypeMicro}" />
       <Setter Property="LetterSpacing" Value="2" />
       <Setter Property="Foreground" Value="{StaticResource BrushTextFaint}" />
     </Style>
 
     <Style Selector="TextBlock.brand">
       <Setter Property="FontFamily" Value="{StaticResource FontDisplay}" />
-      <Setter Property="FontSize" Value="{StaticResource TypeHeading}" />
+      <Setter Property="FontSize" Value="{DynamicResource TypeHeading}" />
       <Setter Property="FontWeight" Value="DemiBold" />
       <Setter Property="LetterSpacing" Value="2" />
       <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}" />
@@ -29,7 +29,7 @@
 
     <Style Selector="TextBlock.target">
       <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
-      <Setter Property="FontSize" Value="{StaticResource TypeCaption}" />
+      <Setter Property="FontSize" Value="{DynamicResource TypeCaption}" />
       <Setter Property="FontWeight" Value="DemiBold" />
       <Setter Property="Foreground" Value="{StaticResource BrushSignalAmber}" />
       <Setter Property="TextTrimming" Value="CharacterEllipsis" />
@@ -37,13 +37,13 @@
 
     <Style Selector="TextBlock.targetmeta">
       <Setter Property="FontFamily" Value="{StaticResource FontMono}" />
-      <Setter Property="FontSize" Value="{StaticResource TypeMicro}" />
+      <Setter Property="FontSize" Value="{DynamicResource TypeMicro}" />
       <Setter Property="Foreground" Value="{StaticResource BrushTextFaint}" />
     </Style>
 
     <Style Selector="TextBlock.source">
       <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
-      <Setter Property="FontSize" Value="{StaticResource TypeRow}" />
+      <Setter Property="FontSize" Value="{DynamicResource TypeRow}" />
       <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}" />
       <Setter Property="TextTrimming" Value="CharacterEllipsis" />
       <Setter Property="VerticalAlignment" Value="Center" />
@@ -51,14 +51,14 @@
 
     <Style Selector="TextBlock.detail">
       <Setter Property="FontFamily" Value="{StaticResource FontMono}" />
-      <Setter Property="FontSize" Value="{StaticResource TypeMicro}" />
+      <Setter Property="FontSize" Value="{DynamicResource TypeMicro}" />
       <Setter Property="Foreground" Value="{StaticResource BrushTextFaint}" />
       <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
 
     <Style Selector="TextBlock.amount">
       <Setter Property="FontFamily" Value="{StaticResource FontMono}" />
-      <Setter Property="FontSize" Value="{StaticResource TypeCountdown}" />
+      <Setter Property="FontSize" Value="{DynamicResource TypeCountdown}" />
       <Setter Property="FontWeight" Value="DemiBold" />
       <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}" />
       <Setter Property="HorizontalAlignment" Value="Right" />
@@ -67,7 +67,7 @@
 
     <Style Selector="TextBlock.empty">
       <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
-      <Setter Property="FontSize" Value="{StaticResource TypeBody}" />
+      <Setter Property="FontSize" Value="{DynamicResource TypeBody}" />
       <Setter Property="Foreground" Value="{StaticResource BrushTextSecondary}" />
       <Setter Property="TextWrapping" Value="Wrap" />
       <Setter Property="TextAlignment" Value="Center" />

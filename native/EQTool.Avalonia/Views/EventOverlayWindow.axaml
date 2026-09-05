@@ -16,7 +16,7 @@
 
     <Style Selector="TextBlock.banner">
       <Setter Property="FontFamily" Value="{StaticResource FontDisplay}" />
-      <Setter Property="FontSize" Value="{StaticResource TypeHeading}" />
+      <Setter Property="FontSize" Value="{DynamicResource TypeHeading}" />
       <Setter Property="FontWeight" Value="DemiBold" />
       <Setter Property="TextAlignment" Value="Center" />
       <Setter Property="TextWrapping" Value="Wrap" />
@@ -24,13 +24,13 @@
 
     <Style Selector="TextBlock.chain">
       <Setter Property="FontFamily" Value="{StaticResource FontMono}" />
-      <Setter Property="FontSize" Value="{StaticResource TypeRow}" />
+      <Setter Property="FontSize" Value="{DynamicResource TypeRow}" />
       <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}" />
     </Style>
 
     <Style Selector="TextBlock.barname">
       <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
-      <Setter Property="FontSize" Value="{StaticResource TypeRow}" />
+      <Setter Property="FontSize" Value="{DynamicResource TypeRow}" />
       <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}" />
       <Setter Property="VerticalAlignment" Value="Center" />
       <Setter Property="TextTrimming" Value="CharacterEllipsis" />
@@ -38,7 +38,7 @@
 
     <Style Selector="TextBlock.barcount">
       <Setter Property="FontFamily" Value="{StaticResource FontMono}" />
-      <Setter Property="FontSize" Value="{StaticResource TypeCountdown}" />
+      <Setter Property="FontSize" Value="{DynamicResource TypeCountdown}" />
       <Setter Property="FontWeight" Value="DemiBold" />
       <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}" />
       <Setter Property="VerticalAlignment" Value="Center" />

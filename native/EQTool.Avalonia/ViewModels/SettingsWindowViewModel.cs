@@ -144,7 +144,13 @@ namespace EQTool.Avalonia.ViewModels
         public int FontSize
         {
             get => settings.FontSize ?? 12;
-            set { settings.FontSize = value; OnPropertyChanged(); Save(); }
+            set
+            {
+                settings.FontSize = value;
+                OnPropertyChanged();
+                Save();
+                TypeScale.Apply(value);
+            }
         }
 
         public int AudioVolume

@@ -29,6 +29,10 @@ namespace EQTool.Avalonia
                 // which would stop the log parser.
                 desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
+                // Before the first window loads, so it opens at the stored size
+                // rather than at the design default and then jumping.
+                TypeScale.Apply(AppServices.Initialize().Bootstrap.Settings.FontSize ?? TypeScale.BaseFontSize);
+
                 var mainWindow = new MainWindow();
                 desktop.MainWindow = mainWindow;
 

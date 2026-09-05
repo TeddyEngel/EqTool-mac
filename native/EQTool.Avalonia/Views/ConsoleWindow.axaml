@@ -14,7 +14,7 @@
 
     <Style Selector="TextBlock.brand">
       <Setter Property="FontFamily" Value="{StaticResource FontDisplay}" />
-      <Setter Property="FontSize" Value="{StaticResource TypeHeading}" />
+      <Setter Property="FontSize" Value="{DynamicResource TypeHeading}" />
       <Setter Property="FontWeight" Value="DemiBold" />
       <Setter Property="LetterSpacing" Value="2" />
       <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}" />
@@ -22,14 +22,14 @@
 
     <Style Selector="TextBlock.eyebrow">
       <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
-      <Setter Property="FontSize" Value="{StaticResource TypeMicro}" />
+      <Setter Property="FontSize" Value="{DynamicResource TypeMicro}" />
       <Setter Property="LetterSpacing" Value="2" />
       <Setter Property="Foreground" Value="{StaticResource BrushTextFaint}" />
     </Style>
 
     <Style Selector="TextBlock.line">
       <Setter Property="FontFamily" Value="{StaticResource FontMono}" />
-      <Setter Property="FontSize" Value="{StaticResource TypeCaption}" />
+      <Setter Property="FontSize" Value="{DynamicResource TypeCaption}" />
       <Setter Property="LineHeight" Value="{StaticResource SizeConsoleLineHeight}" />
       <Setter Property="TextWrapping" Value="Wrap" />
       <Setter Property="Margin" Value="{StaticResource GapConsoleEntry}" />
@@ -37,7 +37,7 @@
 
     <Style Selector="TextBlock.empty">
       <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
-      <Setter Property="FontSize" Value="{StaticResource TypeBody}" />
+      <Setter Property="FontSize" Value="{DynamicResource TypeBody}" />
       <Setter Property="Foreground" Value="{StaticResource BrushTextSecondary}" />
       <Setter Property="TextWrapping" Value="Wrap" />
       <Setter Property="TextAlignment" Value="Center" />
@@ -48,7 +48,7 @@
          amber signal colour the rest of the app uses for "this is live". -->
     <Style Selector="ToggleButton.channel">
       <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
-      <Setter Property="FontSize" Value="{StaticResource TypeMicro}" />
+      <Setter Property="FontSize" Value="{DynamicResource TypeMicro}" />
       <Setter Property="Padding" Value="{StaticResource InsetButton}" />
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="Foreground" Value="{StaticResource BrushTextFaint}" />

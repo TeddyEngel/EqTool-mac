@@ -1705,3 +1705,39 @@ sensitive to that mutation, which is correct for a test that only reads.
 The first version of the markup did not close the `Grid` it opened, and the
 element after it was the `StackPanel` end tag. Reading the region back caught it
 before the build did.
+
+### The font size setting works now
+
+Calling this a design decision was wrong, the same way `LogArchiveSizeMB` was
+wrong the round before. The tokens in `Theme/DesignTokens.axaml` are plain
+numbers, and `TypeBody` and `TypeRow` are both 12, which is also the default of
+the font size setting. So the slider's default already is the base of the scale,
+and multiplying every token by `fontSize / 12` keeps the ordering and the gaps
+exactly as the design file sets them out. That is arithmetic, not a second
+opinion.
+
+`TypeScale` does the arithmetic and writes the result into the application's
+resources, where `DesignTokens.axaml` is merged. Sizes are rounded to a half
+point, because text at an arbitrary fraction renders blurrier and it shows at
+the small end.
+
+The catch was the lookup. All fifty type references across the seven views used
+`StaticResource`, which resolves once when a view loads, so rescaling the
+resources would have changed nothing until each window was reopened. That is the
+same fault fixed three times already this session, so they are `DynamicResource`
+now. The 257 references to colours, spacing and radii were left alone: those do
+not move.
+
+It applies from the settings setter and again at startup before the first window
+is constructed, so a stored size is in place when the window first lays out
+rather than being applied afterwards and visibly jumping.
+
+Six tests cover the arithmetic, including that the default reproduces the design
+file exactly and that no rounding collapses two steps of the scale into each
+other at any size the slider offers. A seventh checks the setting reaches the
+live application resources, and fails if the setter stops applying it.
+
+One part is not covered. `ZoneMapControl` draws its labels with sizes of 14, 11
+and 9 written into `LabelFontSize`, rather than from the tokens, so map labels do
+not follow this setting. The map draws to a canvas rather than composing
+controls, so it needs its own handling.

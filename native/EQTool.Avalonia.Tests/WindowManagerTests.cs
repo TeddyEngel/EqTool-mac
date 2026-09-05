@@ -129,6 +129,30 @@ namespace EQTool.Avalonia.Tests
         }
 
         [TestMethod]
+        public void FontSize_Changed_RescalesTheApplicationTokens()
+        {
+            OnUiThread(() =>
+            {
+                // Arrange
+                // The slider wrote to settings and nothing read it, for the whole
+                // life of the client.
+                var settings = new EQToolSettings { Triggers = new List<Trigger>() };
+                var viewModel = BuildSettingsViewModel(settings);
+
+                // Act
+                viewModel.FontSize = 24;
+
+                // Assert
+                Assert.AreEqual(24.0, (double)global::Avalonia.Application.Current.Resources["TypeBody"], 0.001);
+                Assert.AreEqual(40.0, (double)global::Avalonia.Application.Current.Resources["TypeTitle"], 0.001);
+
+                // Put it back so the other tests see the design values.
+                viewModel.FontSize = 12;
+                Assert.AreEqual(12.0, (double)global::Avalonia.Application.Current.Resources["TypeBody"], 0.001);
+            });
+        }
+
+        [TestMethod]
         public void Opacity_ChangedWhileOpen_AppliesToTheWindow()
         {
             OnUiThread(() =>
