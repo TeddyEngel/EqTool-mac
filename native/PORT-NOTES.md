@@ -1764,3 +1764,37 @@ rather than `private`, and the same mutation now fails it.
 That is the third test this session that passed while proving nothing, and all
 three were found the same way, by breaking the code on purpose and checking the
 suite noticed. Writing the test is not the same as knowing it works.
+
+### What upstream has that this build does not
+
+The notes so far describe what works and say nothing about what is absent, which
+invites the reader to assume parity. This is the gap, with the caveat that most
+of it took three attempts to measure and some of it is still unmeasured.
+
+Every upstream window has a counterpart here. `Console`, `DPSMeter`,
+`EventOverlay`, `MobInfo`, `SpellWindow` and `SettingManagement` all map across,
+and the map widget is `MapWindow`. Window parity is not feature parity though.
+
+What is genuinely missing, established by checking the built assembly rather than
+by searching text:
+
+- The night vision graphics fix. It lives in `SettingsGeneral.xaml.cs`, which is
+  WPF and not compiled.
+- Reset triggers. Same file, plus `SettingsManagementViewModel`, also not
+  compiled.
+- The button that switches EverQuest's own logging on. Same file. `FindEq` is
+  compiled, so finding the install still works; it is the button that is absent.
+- The p99 login middlemand, which was already recorded as not compiled.
+
+What I claimed and have withdrawn: raid mode detection, the friends list, and the
+custom maps folder. Searching for "raid" and "friend" matched zone map data such
+as `eastwastes_2.txt` and test fixtures such as `TestFight.txt`, so the counts
+those searches produced described nothing at all. "cachemaps" appears nowhere in
+the tree, upstream included. I do not know whether these three exist upstream
+under other names, and the earlier numbers should not be trusted.
+
+That is the fourth and fifth search this session to report something untrue. The
+pattern is consistent enough to name: a quick grep across a tree that contains
+game data, test fixtures and an uncompiled WPF application will answer almost any
+question affirmatively, and none of those answers say anything about what the Mac
+build does. The reliable question is whether a type is in the built assembly.
