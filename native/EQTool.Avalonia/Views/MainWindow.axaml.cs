@@ -18,6 +18,11 @@ namespace EQTool.Avalonia.Views
             viewModel = new MainWindowViewModel();
             DataContext = viewModel;
 
+            // The settings window offers always-on-top and opacity for this
+            // window under "Timers". Without this they were written to
+            // settings.json and never read by anything.
+            WindowPreferences.Attach(this, AppServices.Initialize().Bootstrap.Settings.SpellWindowState);
+
             this.FindControl<Button>("ChooseLogFolderButton").Click += OnChooseLogFolderClicked;
             this.FindControl<Button>("OpenMapButton").Click += (_, _) => WindowManager.ShowMap();
             this.FindControl<Button>("OpenDpsButton").Click += (_, _) => WindowManager.ShowDps();

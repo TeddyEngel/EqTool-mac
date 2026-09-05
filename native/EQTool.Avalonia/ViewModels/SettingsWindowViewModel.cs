@@ -15,12 +15,14 @@ namespace EQTool.Avalonia.ViewModels
     {
         private readonly WindowState state;
         private readonly System.Action save;
+        private readonly System.Action reapply;
 
-        public WindowPreferenceViewModel(string label, WindowState state, System.Action save)
+        public WindowPreferenceViewModel(string label, WindowState state, System.Action save, System.Action reapply = null)
         {
             Label = label;
             this.state = state;
             this.save = save;
+            this.reapply = reapply;
         }
 
         public string Label { get; }
@@ -36,6 +38,7 @@ namespace EQTool.Avalonia.ViewModels
                 state.AlwaysOnTop = value;
                 OnPropertyChanged();
                 save();
+                reapply?.Invoke();
             }
         }
 
@@ -50,6 +53,7 @@ namespace EQTool.Avalonia.ViewModels
                 state.Opacity = value;
                 OnPropertyChanged();
                 save();
+                reapply?.Invoke();
             }
         }
 
@@ -96,14 +100,24 @@ namespace EQTool.Avalonia.ViewModels
             Voices = MacVoiceCatalog.Available().Select(a => a.Name).ToList();
             TriggerEditor = triggerEditor;
 
+            // The overlay re-applies as an overlay. Without that flag it would be
+            // put back to a normal window level and drop behind a Wine fullscreen
+            // window, which sits above Avalonia's Topmost.
             WindowPreferences = new List<WindowPreferenceViewModel>
             {
-                new WindowPreferenceViewModel("Timers", settings.SpellWindowState, Save),
-                new WindowPreferenceViewModel("Map", settings.MapWindowState, Save),
-                new WindowPreferenceViewModel("DPS", settings.DpsWindowState, Save),
-                new WindowPreferenceViewModel("Mob Info", settings.MobWindowState, Save),
-                new WindowPreferenceViewModel("Console", settings.ConsoleWindowState, Save),
-                new WindowPreferenceViewModel("Overlay", settings.OverlayWindowState, Save)
+                new WindowPreferenceViewModel("Timers", settings.SpellWindowState, Save,
+                    () => WindowManager.ApplyPreferencesTo<Views.MainWindow>(settings.SpellWindowState)),
+                new WindowPreferenceViewModel("Map", settings.MapWindowState, Save,
+                    () => WindowManager.ApplyPreferencesTo<Views.MapWindow>(settings.MapWindowState)),
+                new WindowPreferenceViewModel("DPS", settings.DpsWindowState, Save,
+                    () => WindowManager.ApplyPreferencesTo<Views.DpsWindow>(settings.DpsWindowState)),
+                new WindowPreferenceViewModel("Mob Info", settings.MobWindowState, Save,
+                    () => WindowManager.ApplyPreferencesTo<Views.MobInfoWindow>(settings.MobWindowState)),
+                new WindowPreferenceViewModel("Console", settings.ConsoleWindowState, Save,
+                    () => WindowManager.ApplyPreferencesTo<Views.ConsoleWindow>(settings.ConsoleWindowState)),
+                new WindowPreferenceViewModel("Overlay", settings.OverlayWindowState, Save,
+                    () => WindowManager.ApplyPreferencesTo<Views.EventOverlayWindow>(
+                        settings.OverlayWindowState, asOverlay: true))
             };
         }
 

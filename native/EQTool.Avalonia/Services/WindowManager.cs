@@ -69,6 +69,17 @@ namespace EQTool.Avalonia.Services
                 WindowPreferences.SetClickThrough(overlay, clickThrough);
         }
 
+        // Same reason. Always-on-top and opacity are read when a window opens, so
+        // the settings row does nothing to the window you are looking at without
+        // this. Opacity is the obvious one: the slider moves and the window does
+        // not.
+        public static void ApplyPreferencesTo<TWindow>(EQTool.Models.WindowState state, bool asOverlay = false)
+            where TWindow : Window
+        {
+            if (TryGet<TWindow>(out var window))
+                WindowPreferences.ApplyNow(window, state, asOverlay);
+        }
+
         // Registers a window the app created itself, so the tray does not open a
         // second copy of something already on screen.
         public static void Adopt(Window window)

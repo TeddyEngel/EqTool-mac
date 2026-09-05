@@ -1581,3 +1581,35 @@ vm.OverlayClickThrough = true  ignoresMouseEvents = True
 vm.OverlayClickThrough = false ignoresMouseEvents = False
 vm.OverlayClickThrough = true  ignoresMouseEvents = True
 ```
+
+### The window rows had the same fault, and one of them was never wired at all
+
+Having found the click-through setting doing nothing to an open overlay, the
+same shape was worth looking for elsewhere. `WindowPreferences.ApplyNow` is only
+ever reached from `Attach`, which runs on `Opened`, so every row in the Windows
+tab had it: changing always-on-top or dragging the opacity slider wrote to
+settings and changed nothing on screen until the window was reopened.
+
+Opacity is the one a user would notice first. The slider moves, and the window
+it names sits there unchanged.
+
+The Timers row was worse. `MainWindow` never called `Attach` at all, so its
+always-on-top and opacity were written to `settings.json` and read by nothing,
+on open or otherwise. Those two controls had never done anything.
+
+Both are fixed the same way as the click-through setting, through
+`WindowManager`, which already tracks open windows by type. The overlay row
+re-applies with `asOverlay: true`; without it the overlay would be put back to a
+normal window level and drop behind a Wine fullscreen window, which sits above
+Avalonia's `Topmost`.
+
+These needed no seam to test, unlike click-through: `Opacity` and `Topmost` are
+ordinary Avalonia properties and can be read straight back on a headless window.
+
+The mutation check earned its place here. Removing both re-apply calls turned
+only two of the three new tests red, because
+`AlwaysOnTop_ChangedWhileOpen_AppliesToTheWindow` had been written to set the
+value true and then assert it was false after setting it back. Attaching had
+already applied the stored value, so the window was false to begin with and the
+assertion held whether or not anything was re-applied. Asserting the direction
+that has to change fixes it, and all three now fail without the fix.

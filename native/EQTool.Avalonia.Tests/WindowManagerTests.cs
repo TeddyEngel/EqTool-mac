@@ -6,6 +6,7 @@ using EQTool.Models;
 using EQTool.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 
 namespace EQTool.Avalonia.Tests
@@ -111,6 +112,101 @@ namespace EQTool.Avalonia.Tests
 
                 // Assert
                 Assert.IsFalse(WindowManager.TryGet<EventOverlayWindow>(out _));
+            });
+        }
+
+        private static WindowPreferenceViewModel OverlayRow(SettingsWindowViewModel viewModel)
+        {
+            return viewModel.WindowPreferences.Single(row => row.Label == "Overlay");
+        }
+
+        private static SettingsWindowViewModel BuildSettingsViewModel(EQToolSettings settings)
+        {
+            var speech = new RecordingTextToSpeach();
+            var triggerEditor = new TriggerEditorViewModel(
+                settings, () => { }, speech, new RecordingAudioService());
+            return new SettingsWindowViewModel(settings, () => { }, speech, triggerEditor);
+        }
+
+        [TestMethod]
+        public void Opacity_ChangedWhileOpen_AppliesToTheWindow()
+        {
+            OnUiThread(() =>
+            {
+                // Arrange
+                // Opacity is the clearest case of the bug this covers: the slider
+                // moves, and the window it names does not change until reopened.
+                var settings = new EQToolSettings { Triggers = new List<Trigger>() };
+                var overlayViewModel = new EventOverlayViewModel(new LogEvents());
+                var overlay = new EventOverlayWindow(overlayViewModel, settings);
+                overlay.Show();
+                WindowManager.Adopt(overlay);
+                var viewModel = BuildSettingsViewModel(settings);
+
+                // Act
+                OverlayRow(viewModel).Opacity = 0.5;
+
+                // Assert
+                Assert.AreEqual(0.5, overlay.Opacity, 0.001);
+
+                overlay.Close();
+                overlayViewModel.Dispose();
+            });
+        }
+
+        [TestMethod]
+        public void AlwaysOnTop_ChangedWhileOpen_AppliesToTheWindow()
+        {
+            OnUiThread(() =>
+            {
+                // Arrange
+                var settings = new EQToolSettings { Triggers = new List<Trigger>() };
+                var overlayViewModel = new EventOverlayViewModel(new LogEvents());
+                var overlay = new EventOverlayWindow(overlayViewModel, settings);
+                overlay.Show();
+                WindowManager.Adopt(overlay);
+                var viewModel = BuildSettingsViewModel(settings);
+                var row = OverlayRow(viewModel);
+
+                // Attaching already applied the stored value, so assert the
+                // direction that has to change. Asserting the other way passes
+                // whether or not the setting is ever re-applied.
+                Assert.IsFalse(overlay.Topmost);
+
+                // Act
+                row.AlwaysOnTop = true;
+
+                // Assert
+                Assert.IsTrue(overlay.Topmost);
+
+                overlay.Close();
+                overlayViewModel.Dispose();
+            });
+        }
+
+        [TestMethod]
+        public void Opacity_AppliedWhileOpen_KeepsTheFloor()
+        {
+            OnUiThread(() =>
+            {
+                // Arrange
+                // Applying live must clamp exactly as opening does, or the window
+                // can be made invisible and then cannot be found to fix it.
+                var settings = new EQToolSettings { Triggers = new List<Trigger>() };
+                var overlayViewModel = new EventOverlayViewModel(new LogEvents());
+                var overlay = new EventOverlayWindow(overlayViewModel, settings);
+                overlay.Show();
+                WindowManager.Adopt(overlay);
+                var viewModel = BuildSettingsViewModel(settings);
+
+                // Act
+                OverlayRow(viewModel).Opacity = 0.0;
+
+                // Assert
+                Assert.AreEqual(0.1, overlay.Opacity, 0.001);
+
+                overlay.Close();
+                overlayViewModel.Dispose();
             });
         }
 
