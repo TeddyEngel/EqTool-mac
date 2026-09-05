@@ -2,6 +2,7 @@ using EQTool.Core.Platform;
 using EQTool.Models;
 using EQTool.Services;
 using EQTool.Services.Handlers;
+using EQToolShared.Enums;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
@@ -256,6 +257,40 @@ namespace EQTool.Avalonia.Tests
             // Assert
             Assert.IsInstanceOfType(handler, typeof(PigParseNetworkGuard),
                 "App.httpclient is not guarded, so character data would be posted on a twenty second timer.");
+        }
+
+        // These two go through the real PigParseApi and the real App.httpclient
+        // rather than a stub, which is the path the running client takes. The
+        // guard answers before a socket is opened, so they stay offline.
+        [TestMethod]
+        public void SendPlayerData_ThroughTheRealApi_IsRefusedWithoutThrowing()
+        {
+            // Arrange
+            var api = new PigParseApi();
+            var endpoint = new Uri("https://pigparse.azurewebsites.net/api/player/upsertplayers");
+
+            // Act
+            api.SendPlayerData(new List<EQToolShared.APIModels.PlayerControllerModels.Player>(), Servers.Green);
+
+            // Assert
+            Assert.IsFalse(PigParseNetworkGuard.IsAllowed(endpoint));
+        }
+
+        [TestMethod]
+        public void GetData_ThroughTheRealApi_DegradesToAnEmptyList()
+        {
+            // ConHandler assigns the wiki result to the view model after this
+            // call and inside the same try, so a throw here would blank the whole
+            // mob info window rather than merely leave it unpriced.
+            // Arrange
+            var api = new PigParseApi();
+
+            // Act
+            var prices = api.GetData(new List<string> { "Rusty Dagger" }, Servers.Green);
+
+            // Assert
+            Assert.IsNotNull(prices, "A null would throw inside ConHandler's loop over the prices.");
+            Assert.AreEqual(0, prices.Count);
         }
     }
 }

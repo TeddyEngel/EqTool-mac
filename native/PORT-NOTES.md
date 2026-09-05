@@ -1242,3 +1242,31 @@ and already used for the updater. It has been left alone deliberately: the
 updater guard prevents a broken action, whereas this would switch off a feature
 somebody may want. That belongs with the sharing decision rather than ahead of
 it.
+
+### The guard costs item prices in the mob info window
+
+The allow list admits `/api/item/wiki` and refuses everything else on the
+service, and one of the things it refuses is `/api/item/postmultiple`. That is
+the item price lookup. `ConHandler` calls the wiki first and then asks for
+prices for whatever loot the mob is known to drop, so conning a mob still fills
+the window in, but the price column stays empty.
+
+The failure is quiet rather than damaging, which is worth knowing because it
+could easily have been worse. `ConHandler` assigns the wiki result to the view
+model *after* the price call and inside the same `try`, so a thrown exception
+there would have left the whole window blank instead of merely unpriced.
+`PigParseApi.GetData` checks for `HttpStatusCode.OK` before it reads the body,
+so the refusal lands on the existing empty-result path and returns an empty
+list. Two tests drive the real `PigParseApi` against the real `App.httpclient`
+to pin that down, one for this call and one for the twenty second player upload.
+
+Worth being clear that this block is stricter than the reason the guard exists.
+`/api/item/postmultiple` sends item names and a server. It does not send a
+character name, a guild, or a position. The argument for refusing it anyway is
+that it still reports what you are looking at and when, from a machine whose
+owner has not opted into talking to this service at all. The argument against is
+that it costs a working feature for a request that cannot identify anyone.
+
+That was decided one way here without asking, which is the wrong way round for a
+trade of this kind. Adding the path to `AllowedPaths` in `PigParseNetworkGuard`
+restores prices and changes nothing else.
