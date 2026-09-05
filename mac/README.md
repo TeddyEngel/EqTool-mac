@@ -22,6 +22,35 @@ What has not been checked matters just as much:
   Any opaque content, such as a timer bar, receives the click instead of
   passing it to the game behind it.
 
+## What this sends over the network
+
+Under Wine you run the ordinary Windows build, so it does what it does on
+Windows. Two of those things are worth knowing before you install, because the
+interface announces neither.
+
+Once the program works out which character you are playing, it posts character
+data to `pigparse.azurewebsites.net` every twenty seconds. The location sharing
+setting does not decide whether that request goes out. It rides inside the
+request as a field, and the request is sent either way.
+
+The program posts its errors to the same service. The message is the exception
+text, which routinely contains file paths, and on macOS those paths contain your
+account name.
+
+Neither is a fault in the macOS packaging. Windows users get both. They are
+written down here because the sharing setting reads as though it controls the
+first one, and it does not.
+
+This build changes one thing: the updater is switched off. It fetches Windows
+release archives, and there is no macOS release for it to find.
+`spike/WINE-FINDINGS.md` has the details.
+
+The native client in `native/` does block the rest. It allows the mob info wiki
+lookup and refuses everything else on that service. That guard does not apply
+here, because the Wine path runs the upstream binary instead of the native code.
+
+All of this comes from reading the code rather than watching the traffic.
+
 ## Quick install
 
 You need a Mac with Homebrew already installed. The installer will not install

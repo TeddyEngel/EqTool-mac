@@ -1198,3 +1198,47 @@ would pass everything else.
 This is worth weighing when the sharing question is answered. The upstream
 feature cannot simply be switched on: it needs a real gate on the send, not the
 flag-inside-the-payload arrangement it ships with.
+
+### Checking the network surface against the assembly, not the project file
+
+Twice now a conclusion about what is compiled in has been wrong because it came
+from searching `EQTool.Core.csproj` for a file name. Whole directories arrive
+through includes like `EQTool\Services\Handlers\**\*.cs`, so individual names
+never appear and the search reports absence for files that are present.
+
+Loading the built assembly and asking it settles the question. Every type
+holding an `HttpMessageInvoker` field:
+
+```
+EQTool.App  ::  httpclient (static)
+```
+
+One, and it is the guarded client in the compatibility shim. `LoggingService`,
+`InventoryWatcherService` and `UIFileSyncService` each construct their own
+`HttpClient` upstream, and none of the three is compiled into the Mac core.
+`LoggingService` in particular is replaced by a no-op in
+`Compat/EqToolStubs.cs`, which matters because `PlayerTrackerService` calls it
+from the catch block around the request the guard now refuses. Upstream that
+call posts the exception text to `/api/eqtool/exception`.
+
+So `PigParseNetworkGuard` covers the native client completely. Prefer this check
+over reading the project file.
+
+### The Wine path does not have that guard
+
+The Wine path runs the upstream binary, so none of the above applies to it. The
+only upstream behaviour changed for the Mac configuration is the updater:
+`#if MACOS` appears in `UpdateRunner.cs` and `UpdateService.cs`, and nowhere
+else. `PlayerTrackerService` and `LoggingService` are untouched, so under Wine
+the twenty second character upload and the exception posting both run.
+
+That is not a regression. It is what the program does on Windows, and it is
+upstream's decision. It is recorded because `mac/README.md` recommends the Wine
+path, and recommending it without saying so is the part that would be wrong.
+The disclosure now sits in that file above the install instructions.
+
+Guarding it would be easy, since the `#if MACOS` mechanism is already in place
+and already used for the updater. It has been left alone deliberately: the
+updater guard prevents a broken action, whereas this would switch off a feature
+somebody may want. That belongs with the sharing decision rather than ahead of
+it.
