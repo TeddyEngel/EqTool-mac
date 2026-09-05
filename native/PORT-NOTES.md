@@ -1944,3 +1944,37 @@ existing catch blocks, and the parse path that already runs stays the only path.
 Worth keeping the numbers rather than the conclusion alone. If the map format
 grows or spell parsing gets heavier, the trade changes, and the next person
 should re-measure rather than trust this paragraph.
+
+### The volume setting did nothing for spoken triggers
+
+The stub audit covered `Compat/` and stopped there, which left out the other half
+of the same risk. `Platform/` holds replacements written for macOS rather than
+stubs, and a replacement can drop behaviour just as quietly as a stub can.
+
+Comparing `MacTextToSpeach` against upstream's `TextToSpeach` shows it. Upstream
+reads two settings before speaking:
+
+```
+var voice  = eQToolSettings.SelectedVoice;
+var volume = eQToolSettings.GlobalAudioVolume ?? 100;
+```
+
+Mine read the voice and never looked at the volume. `MacAudioService` does read
+it, clamps it, and declines to play at zero, so the slider worked for sound file
+alerts and did nothing at all for spoken ones. Two alert types, one control, and
+it only moved one of them.
+
+`say` has no volume flag. The only route is an inline speech command, which was
+worth confirming rather than trusting: rendering the same phrase to a file at
+`[[volm 1.0]]` and `[[volm 0.1]]` gives peak amplitudes of 18206 and 1514, so it
+does what the documentation claims.
+
+The command is added only when the volume is actually below full. `[[volm 1.0]]`
+is what `say` already does, so adding it always would rewrite every phrase for no
+effect, and the default path stays exactly as it was. All five existing tests
+pass unchanged, which is the evidence for that rather than an intention.
+
+One test sets the thread culture to `de-DE` before speaking. Formatted without
+`InvariantCulture` the command becomes `[[volm 0,35]]`, which `say` cannot parse
+and reads out loud instead of obeying, so the phrase would be prefixed with
+spoken punctuation.

@@ -90,6 +90,91 @@ namespace EQTool.Core.Tests
         }
 
         [TestMethod]
+        public void Say_WithReducedVolume_PrefixesTheVolumeCommand()
+        {
+            // Arrange
+            // Upstream sets the synthesizer's Volume from this setting. `say` has
+            // no volume flag, so the equivalent is an inline speech command.
+            settings.GlobalAudioVolume = 50;
+
+            // Act
+            speech.Say("Enrage");
+
+            // Assert
+            var arguments = launcher.Launches[0].Arguments;
+            Assert.AreEqual(1, arguments.Count);
+            Assert.AreEqual("[[volm 0.5]]Enrage", arguments[0]);
+        }
+
+        [TestMethod]
+        public void Say_AtFullVolume_LeavesThePhraseAlone()
+        {
+            // Arrange
+            // `[[volm 1.0]]` is what say already does, so adding it would alter
+            // every phrase to no effect.
+            settings.GlobalAudioVolume = 100;
+
+            // Act
+            speech.Say("Enrage");
+
+            // Assert
+            Assert.AreEqual("Enrage", launcher.Launches[0].Arguments[0]);
+        }
+
+        [TestMethod]
+        public void Say_AtZeroVolume_DoesNotLaunchAnything()
+        {
+            // Arrange
+            // Matches MacAudioService, which also declines to play at zero rather
+            // than starting a silent process.
+            settings.GlobalAudioVolume = 0;
+
+            // Act
+            speech.Say("Enrage");
+
+            // Assert
+            Assert.AreEqual(0, launcher.Launches.Count);
+        }
+
+        [TestMethod]
+        public void Say_WithVolumeOutOfRange_IsClamped()
+        {
+            // Arrange
+            settings.GlobalAudioVolume = 500;
+
+            // Act
+            speech.Say("Enrage");
+
+            // Assert
+            Assert.AreEqual("Enrage", launcher.Launches[0].Arguments[0]);
+        }
+
+        [TestMethod]
+        public void Say_WithReducedVolume_UsesAnInvariantDecimalPoint()
+        {
+            // Arrange
+            // Under a comma-decimal culture "0,35" would not parse as a volume,
+            // and say reads the unparsed command aloud instead of obeying it.
+            var original = System.Threading.Thread.CurrentThread.CurrentCulture;
+            System.Threading.Thread.CurrentThread.CurrentCulture =
+                new System.Globalization.CultureInfo("de-DE");
+            settings.GlobalAudioVolume = 35;
+
+            try
+            {
+                // Act
+                speech.Say("Enrage");
+
+                // Assert
+                StringAssert.StartsWith(launcher.Launches[0].Arguments[0], "[[volm 0.35]]");
+            }
+            finally
+            {
+                System.Threading.Thread.CurrentThread.CurrentCulture = original;
+            }
+        }
+
+        [TestMethod]
         public void Say_EmptyText_DoesNotLaunchAnything()
         {
             // Act

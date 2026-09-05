@@ -1,6 +1,7 @@
 using EQTool.Models;
 using EQTool.Services;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace EQTool.Core.Platform
 {
@@ -14,6 +15,7 @@ namespace EQTool.Core.Platform
     public class MacTextToSpeach : ITextToSpeach
     {
         private const string SayExecutable = "/usr/bin/say";
+        private const int FullVolumePercent = 100;
 
         private readonly IProcessLauncher processLauncher;
         private readonly EQToolSettings settings;
@@ -38,9 +40,29 @@ namespace EQTool.Core.Platform
                 arguments.Add(voice);
             }
 
+            // Upstream sets the synthesizer's Volume from this. `say` has no
+            // volume flag, so the only route is an inline speech command, which
+            // means it has to ride on the phrase itself.
+            var volumePercent = System.Math.Clamp(settings?.GlobalAudioVolume ?? FullVolumePercent, 0, FullVolumePercent);
+            if (volumePercent <= 0)
+                return;
+
+            var phrase = text;
+            if (volumePercent < FullVolumePercent)
+            {
+                // Only when it is actually turned down: `[[volm 1.0]]` is what
+                // `say` already does, so adding it at full volume would change
+                // every phrase for no effect.
+                var volume = volumePercent / (double)FullVolumePercent;
+
+                // Invariant, or a comma decimal separator turns the command into
+                // something `say` speaks out loud instead of obeying.
+                phrase = "[[volm " + volume.ToString("0.###", CultureInfo.InvariantCulture) + "]]" + text;
+            }
+
             // ArgumentList escapes each entry, so the phrase is passed as one
             // argument and never reaches a shell for interpretation.
-            arguments.Add(text);
+            arguments.Add(phrase);
 
             processLauncher.Start(SayExecutable, arguments);
         }
