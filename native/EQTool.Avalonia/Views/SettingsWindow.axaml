@@ -128,6 +128,16 @@
             <CheckBox IsChecked="{Binding LogArchiveEnabled}"
                       Content="Archive the log file when it grows large" />
 
+            <Grid ColumnDefinitions="Auto,*,Auto" IsEnabled="{Binding LogArchiveEnabled}">
+              <TextBlock Grid.Column="0" Classes="label" Text="Archive above" Width="110" />
+              <Slider Grid.Column="1"
+                      Minimum="10" Maximum="500"
+                      TickFrequency="10"
+                      IsSnapToTickEnabled="True"
+                      Value="{Binding LogArchiveSizeMB}" />
+              <TextBlock Grid.Column="2" Classes="value" Text="{Binding LogArchiveSizeMB, StringFormat='{}{0} MB'}" Width="60" />
+            </Grid>
+
           </StackPanel>
         </ScrollViewer>
       </TabItem>

@@ -51,6 +51,48 @@ namespace EQTool.Avalonia.Tests
         }
 
         [TestMethod]
+        public void LogArchiveSizeMB_Unset_DefaultsTo100()
+        {
+            // Act
+            var viewModel = CreateViewModel();
+
+            // Assert
+            Assert.AreEqual(100, viewModel.LogArchiveSizeMB);
+        }
+
+        [TestMethod]
+        public void LogArchiveSizeMB_Set_RoundTripsAndSaves()
+        {
+            // Arrange
+            // Archiving could be switched on but not tuned until this existed,
+            // so the threshold was whatever the default happened to be.
+            var viewModel = CreateViewModel();
+            saveCount = 0;
+
+            // Act
+            viewModel.LogArchiveSizeMB = 250;
+
+            // Assert
+            Assert.AreEqual(250, settings.LogArchiveSizeMB);
+            Assert.AreEqual(250, viewModel.LogArchiveSizeMB);
+            Assert.AreEqual(1, saveCount);
+        }
+
+        [TestMethod]
+        public void LogArchiveSizeMB_BelowOne_ReadsBackAsOne()
+        {
+            // Arrange
+            // The model floors this, so the value read back is not the one set.
+            var viewModel = CreateViewModel();
+
+            // Act
+            viewModel.LogArchiveSizeMB = 0;
+
+            // Assert
+            Assert.AreEqual(1, viewModel.LogArchiveSizeMB);
+        }
+
+        [TestMethod]
         public void AudioVolume_Set_RoundTripsAndSaves()
         {
             // Arrange

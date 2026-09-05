@@ -165,6 +165,19 @@ namespace EQTool.Avalonia.ViewModels
             set { settings.LogArchiveEnabled = value; OnPropertyChanged(); Save(); }
         }
 
+        // The model floors this at 1, so the property reads back whatever was
+        // stored rather than what was asked for.
+        public int LogArchiveSizeMB
+        {
+            get => settings.LogArchiveSizeMB;
+            set
+            {
+                settings.LogArchiveSizeMB = value;
+                OnPropertyChanged();
+                Save();
+            }
+        }
+
         public bool YouOnlySpells
         {
             get => settings.YouOnlySpells;

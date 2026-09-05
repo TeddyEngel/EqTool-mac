@@ -1684,3 +1684,24 @@ disagreeing with something already known by hand, the button sweep flagging a
 settings button verified minutes earlier as unwired. A sweep that contradicts a
 checked fact is measuring badly, and its other rows are worth nothing until it
 agrees.
+
+### Finishing the archive threshold
+
+`LogArchiveSizeMB` was listed as something to ask about, which was the wrong
+call. Wiring the archive service up while leaving its threshold unreachable is
+not a decision to put to anyone, it is half a feature: the checkbox turned
+archiving on and the size stayed at whatever the default happened to be.
+
+There is a slider for it now, from 10 to 500 in steps of 10, sitting under the
+checkbox and disabled while archiving is off so the relationship between the two
+is visible. The view model property reads straight off the settings object rather
+than caching what was assigned, because `EQToolSettings` floors the value at 1
+and so the value read back is not always the value set.
+
+Three tests cover it. Two of them fail if the setter stops writing to settings,
+which is the check that matters. The third pins the default at 100 and is not
+sensitive to that mutation, which is correct for a test that only reads.
+
+The first version of the markup did not close the `Grid` it opened, and the
+element after it was the `StackPanel` end tag. Reading the region back caught it
+before the build did.
