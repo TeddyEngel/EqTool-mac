@@ -2283,3 +2283,38 @@ condition if the upstream behaviour is preferred.
 is left that way deliberately: none of these windows can currently be maximised
 in a way worth restoring, and inventing that is a second judgement on top of the
 first.
+
+### Sweeping the settings model rather than one field at a time
+
+Six faults in this file were dead settings found one by one: a log archive
+checkbox with no service, a font size nothing read, an overlay click-through that
+only applied on open, a window position never saved, a closed flag never
+consulted. Each was found by tripping over it. `WindowState` made the pattern
+obvious, since it holds three fields and two of them were dead while only the
+first was noticed.
+
+So the whole model was walked instead. Thirty-three public properties on
+`EQToolSettings`, each checked for a reader in code that is actually compiled
+here.
+
+Eleven are read by linked upstream code and were already working: the player
+list, triggers and trigger folders, the three roll display flags, the spells
+filter, the selected voice, the audio volume, and the two EverQuest directories.
+Six were dead and are fixed. Six are the per-window state objects, now handled.
+`WindowState.State` is knowingly unread.
+
+Five are left: `DiscordApiToken`, `DiscordId`, `DiscordUsername`, `SyncUIFiles`
+and `LoginMiddleMand`. Every reader of those lives in a file this build does not
+compile, which is the expected shape for features that were never ported, and the
+settings window has no control bound to any of them. Nothing offers a switch that
+does nothing, which is the part that mattered.
+
+The sweep found nothing new, and that is the point of recording it. This class of
+fault is now exhausted rather than merely quiet, and the next dead setting would
+have to be introduced rather than discovered.
+
+One measurement note. The first pass listed readers by file basename, which put
+`SettingsWindowViewModel.cs` in the results without saying whether that meant
+upstream's or the native one. The earlier sweep of this area had only looked at
+writes, so a read-only binding to an unported feature would have escaped both.
+Re-running against `native/` alone is what settled it.
