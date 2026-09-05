@@ -2318,3 +2318,27 @@ One measurement note. The first pass listed readers by file basename, which put
 upstream's or the native one. The earlier sweep of this area had only looked at
 writes, so a read-only binding to an unported feature would have escaped both.
 Re-running against `native/` alone is what settled it.
+
+### The second settings container, swept the same way
+
+`EQToolSettings.Players` holds `PlayerInfo`, which carries fifty-one public
+properties, most of them per-character alert toggles: first to engage, root
+warnings, death loops, bard counts, complete heal chains, Zlandicar. That is the
+same shape as the container that produced six faults, and it had never been
+looked at as a whole.
+
+Fourteen of the fifty-one have no reader in code this build compiles. None of the
+fourteen is referenced anywhere under `native/`: no binding, no code path, no
+control. They belong to upstream features that were not ported, which is the
+same benign category as the Discord fields in the previous sweep.
+
+Worth separating the two measurements, because one of them is weak. Deciding
+which files are compiled was done with a hand-maintained exclusion list, so the
+count of fourteen is approximate and should not be quoted as though it were
+exact. The question that matters, whether the native client offers a control
+backed by nothing, was answered by searching `native/` directly with no list and
+no heuristic, and that answer holds whatever the first number really is.
+
+Both settings containers are now exhausted. Six dead settings were found and
+fixed by tripping over them one at a time; two deliberate sweeps since have found
+nothing further. The next one would have to be introduced rather than discovered.
