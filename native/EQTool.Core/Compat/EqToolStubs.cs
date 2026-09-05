@@ -20,6 +20,13 @@ namespace EQTool
 {
     public static class App
     {
+        // Upstream sets the regex match timeout in this class's static ctor, and
+        // things that reach App before Main should get the same guarantee.
+        static App()
+        {
+            EQTool.Core.Platform.RegexSafety.Install();
+        }
+
         public static string Version => "0.0-mac-core";
         public static string VersionType => "Mac";
 

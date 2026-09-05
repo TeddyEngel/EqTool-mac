@@ -1831,3 +1831,35 @@ reverting with `git checkout --` destroys anything uncommitted in that file. The
 first mutation was fine; reverting it threw away the entire feature, which was
 still unstaged, and the next mutation then failed to find its anchor. Commit
 first, mutate second.
+
+### User trigger patterns ran with no time limit
+
+Found while asking whether "Reset Triggers" is a convenience or a way out of a
+broken state. That question led to `Trigger.cs`, where the comment above the
+regex compile says the match timeout is the process-wide default set in `App`'s
+static constructor, and that user-authored patterns are the ones most likely to
+backtrack catastrophically.
+
+`App` in this build is the stub in `Compat/EqToolStubs.cs`. It never carried that
+constructor over, so nothing set the key and every pattern ran unbounded.
+
+The consequence is not a crash. A pattern that backtracks catastrophically does
+not fail, it runs, and it runs on the log parsing thread, so the client stops
+updating and stays stopped. Restarting does not clear it either, because the log
+line that triggered it is still there to be matched again. Compilation was
+already guarded, so a malformed pattern was handled; an expensive one was not.
+
+`RegexSafety.Install` sets it now, as the first statement in `Main` and from the
+stub's static constructor. Ordering is the whole property: `Regex` reads the key
+once, the first time the type is used anywhere in the process, and caches it
+forever, so a call arranged later during startup would do nothing. 25ms is
+upstream's value and its reasoning holds, the deadline being compared against
+`Environment.TickCount`, which only moves every 15.6ms or so.
+
+What the tests show is narrower than the fix. Since `Regex` caches the default on
+first use, and the test host has certainly built one before any test runs, no
+test can install the default and then watch it take effect. They check the value
+is put in place, that a second call leaves an existing one alone, that 25ms does
+abort `^(a+)+$` against forty characters, and that it is still generous enough
+for an ordinary log line. The catastrophic case runs on a worker with a ten
+second cap so that a missing bound fails the test rather than hanging the run.

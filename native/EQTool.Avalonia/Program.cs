@@ -8,6 +8,9 @@ namespace EQTool.Avalonia
         [STAThread]
         public static int Main(string[] args)
         {
+            // First, before anything in the process builds a Regex. See RegexSafety.
+            EQTool.Core.Platform.RegexSafety.Install();
+
             return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
         }
 
