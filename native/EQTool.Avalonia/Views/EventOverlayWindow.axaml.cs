@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using EQTool.Avalonia.Services;
+using EQTool.Models;
 using EQTool.Avalonia.ViewModels;
 using System;
 
@@ -10,15 +11,24 @@ namespace EQTool.Avalonia.Views
     public partial class EventOverlayWindow : Window
     {
         private readonly EventOverlayViewModel viewModel;
+        private readonly EQToolSettings settings;
 
         public EventOverlayWindow()
+            : this(new EventOverlayViewModel(), AppServices.Initialize().Bootstrap.Settings)
+        {
+        }
+
+        // Taking both lets the overlay be shown against throwaway state. The
+        // parameterless path builds them from AppServices, which reads the real
+        // settings file and subscribes to the live log stream.
+        public EventOverlayWindow(EventOverlayViewModel viewModel, EQToolSettings settings)
         {
             InitializeComponent();
 
-            viewModel = new EventOverlayViewModel();
+            this.viewModel = viewModel;
             DataContext = viewModel;
 
-            var settings = AppServices.Initialize().Bootstrap.Settings;
+            this.settings = settings;
             WindowPreferences.Attach(this, settings.OverlayWindowState, asOverlay: true);
 
             var handle = this.FindControl<Border>("DragHandle");
@@ -34,7 +44,6 @@ namespace EQTool.Avalonia.Views
         // turning the setting off again.
         private void OnOverlayOpened(object sender, EventArgs e)
         {
-            var settings = AppServices.Initialize().Bootstrap.Settings;
             WindowPreferences.SetClickThrough(this, settings.OverlayClickThrough);
         }
 

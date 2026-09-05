@@ -97,8 +97,13 @@ namespace EQTool.Avalonia.ViewModels
         }
 
         public EventOverlayViewModel(AppServices services)
+            : this(services.Resolve<LogEvents>())
         {
-            logEvents = services.Resolve<LogEvents>();
+        }
+
+        public EventOverlayViewModel(LogEvents logEvents)
+        {
+            this.logEvents = logEvents;
 
             logEvents.OverlayEvent += OnOverlay;
             logEvents.TimerBarEvent += OnTimerBar;
