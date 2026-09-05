@@ -2081,3 +2081,42 @@ detection rule can be checked against the thing it is meant to match.
 A native `EverQuest.app` does run on this machine, from a separate project
 outside this repository. It is not what the client reads from and it does not
 match upstream's rule, which compares the process name against `eqgame`.
+
+### Correcting the caveat: what is and is not validated
+
+Every summary of this work has ended with the same line, that the client has only
+been tested against log lines written by hand for the purpose. That is true of
+one layer and wrong about another, and the distinction matters.
+
+`EQTool.Core.Tests` links 41 of upstream's 42 test files. They contribute 375
+test methods against 85 of mine. `DamageParserTests`, `SpellMatchingTests`,
+`ZoneParsingTests`, `PetTests`, `SlainHandlerTests`, `FTETests`,
+`RandomRollTests`, `AuctionParsingTests` and the rest all run here, against the
+same linked parsers the client uses.
+
+Their fixtures are message bodies, since the parsers take the message and the
+timestamp separately:
+
+```
+"Vebanab slices a willowisp for 56 points of damage."
+"Ratman Rager was hit by non-melee for 45 points of damage."
+```
+
+Names like those are not what someone writing a parser test from nothing would
+invent. They read as lines lifted from real logs, which is inference rather than
+proof, but it is strong.
+
+So the parsing layer is checked against expectations written by people running
+this against a real game. Damage, spells, zone changes, pets, rolls, first to
+engage, slain messages, auctions, comms and triggers all sit behind those 375
+tests, and they pass.
+
+What remains unvalidated is everything around the parsers. Whether the log file
+is found and tailed correctly, whether timers fire and expire on screen, whether
+the overlay draws in the right place over a running game, whether audio and
+speech actually reach the player, and every Mac-specific piece written for this
+port. That layer rests on my 85 tests and a scaffold directory holding one log
+file named after a test character.
+
+The honest form of the caveat is therefore narrower than the one used so far:
+the parsing is borrowed and tested, the integration and the macOS layer are not.
