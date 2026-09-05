@@ -23,6 +23,8 @@ namespace EQTool.Avalonia.Services
 
         public static void ShowDps() => Show(() => new DpsWindow());
 
+        public static void ShowConsole() => Show(() => new ConsoleWindow());
+
         public static void Show<TWindow>(Func<TWindow> create) where TWindow : Window
         {
             if (OpenWindows.TryGetValue(typeof(TWindow), out var existing))

@@ -889,3 +889,101 @@ screencapture -x -o -l <windowId> /tmp/window.png
 window was confirmed to be `SettingManagement` rather than a stray Wine desktop
 window, and the layer, which distinguishes the tray icon (layer 25) from the
 app window (layer 0).
+
+## Console window
+
+`Views/ConsoleWindow.axaml` over `ViewModels/ConsoleWindowViewModel.cs`, which
+mirrors upstream's `ConsoleViewModel.ConsoleOutput`. It opens from the tray menu
+and from the `Console` button in the timer window header, both through
+`WindowManager`.
+
+### The brush on a console line is not a brush
+
+`ConsoleLine.Brush` is `System.Windows.Media.Brush` from
+`EQTool.Core/Compat/WindowsShims.cs`. That type is a marker class: a `Freeze()`
+that does nothing, a `CanFreeze` that is always true, and no colour anywhere on
+it. The colour is on the `SolidColorBrush` subclass, as `Color { A, R, G, B }`.
+
+Every value that reaches a console line comes from the shim's `Brushes` table,
+which is entirely `SolidColorBrush`, so the mapping reads those four bytes and
+builds an `ImmutableSolidColorBrush`. The results are cached on the shim
+instance; `Brushes` members are singletons, so six entries cover everything
+`DebugOutput` can produce. A brush that is not a `SolidColorBrush` has no
+colour to read and takes `BrushTextPrimary` from the tokens rather than a
+colour invented in the mapping.
+
+In practice one colour shows up. `DebugOutput` picks white for
+`Informational`, orange for `Warning`, green for `Success`, red for `Error`,
+salmon and cyan for the two remote-message types — but every `OutputType.Spells`
+call in the linked tree passes the default. The single exception is
+`SpellCastOnOtherHandler.cs:58`, which logs `Could not match spell` as `Error`.
+
+### Two channels, and only one of them can speak here
+
+Nothing reaches the console unless `DebugOutput.LogMapping` or
+`DebugOutput.LogSpells` is on, and both start false. Upstream puts them behind
+two checkboxes in the settings window. This client has no settings window, so
+opening the console turns both on and closing it puts them back. Leaving them
+on for a window nobody is looking at is work done for no reader. The two
+switches in the header are the same two flags.
+
+`OutputType.Map` is only written by `Services/SignalrPlayerHub.cs`, which is not
+linked — it needs SignalR. So the MAP channel is wired and toggles correctly but
+has no writer in this build, and everything in the window arrives on SPELLS.
+
+### The container was handing out a private console to every parser
+
+The first run showed an empty window against a log that was definitely being
+parsed. `NativeContainer` never registered `ConsoleViewModel` or `DebugOutput`,
+so both fell through to `AnyConcreteTypeNotAlreadyRegisteredSource`, which
+resolves per dependency. Each parser held its own `DebugOutput`, with its own
+`LogSpells`, writing into its own `ConsoleViewModel`. The window switched a
+flag on a seventh instance that nothing else could see.
+
+Upstream's `DI.cs:71-72` registers both `SingleInstance`. So does
+`NativeContainer` now. This is the same class of fault the `FileReader`
+comment in that file warns about, and it fails silently in the same way.
+
+### Following the tail without fighting the reader
+
+The newest line is the point of the window, so it scrolls to the bottom as
+lines arrive — but only while it is already there. `ScrollChanged` fires both
+when the reader scrolls and when the content grows, and reading "not at the
+bottom" from the second would switch following off on the first line to
+arrive. Only a non-zero `OffsetDelta.Y` says anything about where the reader
+wants to be, so that is the only thing that updates the flag. The scroll
+itself is posted at `Background` priority, because a line that has not been
+laid out yet has no extent to scroll to.
+
+The 1000-line cap stays where upstream put it, on `ConsoleViewModel`. The
+window mirrors `CollectionChanged` rather than rebuilding, so trimming the
+front does not re-map a thousand brushes.
+
+### Wrapped entries needed two fixes
+
+`ScrollViewer` measures its content against the unpadded extent, so a
+`Padding` on the scroller made every wrapped line overshoot the viewport and
+lose its last few characters off the right edge — `casting Dazzle.` rendered as
+`casting Dazzl`. The inset belongs on the list instead. Screenshot `17` is from
+after the fix; the clipped capture was a working one and was not kept.
+
+Entries also needed a gap. `SizeConsoleLineHeight` is 14 and a single entry
+runs to three wrapped lines, so without `GapConsoleEntry` a three-line entry
+reads as three entries.
+
+### Log lines are prefixed with a full POSIX path
+
+`DebugOutput.WriteLine` builds its prefix with
+`filePath.Split('\\').Last()`, meaning to reduce a `CallerFilePath` to a bare
+file name. On macOS `\` is not a separator, so nothing is stripped and every
+console entry carries the absolute build-machine path. That is upstream's
+string and this window prints what it is given, but it is why an entry wraps
+over three lines here and one line on Windows.
+
+### Evidence
+
+| File | Shows |
+|---|---|
+| `17-console-live.png` | Seven entries from a real log tail: `YouBeginCastingParser` on Levitate, `SpellCastOnOtherParser` on `Jobob's feet leave the ground.`, `SpellCastOnOtherHandler` reporting `Skipped dt >= 2400 AND True`, `YouHaveFinishedMemorizingParser` on Aegolism, Dazzle, `YourSpellInterruptedParser`, `YouForgetParser` |
+| `18-console-follows-tail.png` | Thirty-one entries with the view pinned to the newest |
+| `19-console-holds-position.png` | The reader scrolled up; four more entries have arrived (35 lines in the header) and the view has not moved |

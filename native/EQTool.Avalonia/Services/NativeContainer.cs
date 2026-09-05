@@ -40,6 +40,14 @@ namespace EQTool.Avalonia.Services
             RegisterCoreTypes(builder);
 
             _ = builder.RegisterType<LogEvents>().AsSelf().SingleInstance();
+            // Both of these are SingleInstance in upstream's DI.cs and neither can
+            // be left to AnyConcreteTypeNotAlreadyRegisteredSource, which hands out
+            // a fresh instance per dependency. Every parser would then hold its own
+            // DebugOutput with its own LogSpells flag, writing into its own
+            // ConsoleViewModel, and the console window would watch a collection
+            // nothing ever appends to.
+            _ = builder.RegisterType<EQTool.ViewModels.ConsoleViewModel>().AsSelf().SingleInstance();
+            _ = builder.RegisterType<DebugOutput>().AsSelf().SingleInstance();
             _ = builder.RegisterType<SpellIcons>().AsSelf().SingleInstance();
             _ = builder.RegisterType<ParseSpells_spells_us>().AsSelf().SingleInstance();
             _ = builder.RegisterType<EQTool.ViewModels.SettingsWindowViewModel>().AsSelf().SingleInstance();

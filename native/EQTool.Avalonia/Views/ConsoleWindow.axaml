@@ -1,0 +1,165 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:EQTool.Avalonia.ViewModels"
+        x:Class="EQTool.Avalonia.Views.ConsoleWindow"
+        x:DataType="vm:ConsoleWindowViewModel"
+        Title="PigParse Console"
+        Width="640"
+        Height="420"
+        MinWidth="360"
+        MinHeight="200"
+        Background="{StaticResource BrushWindowGround}">
+
+  <Window.Styles>
+
+    <Style Selector="TextBlock.brand">
+      <Setter Property="FontFamily" Value="{StaticResource FontDisplay}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeHeading}" />
+      <Setter Property="FontWeight" Value="DemiBold" />
+      <Setter Property="LetterSpacing" Value="2" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}" />
+    </Style>
+
+    <Style Selector="TextBlock.eyebrow">
+      <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeMicro}" />
+      <Setter Property="LetterSpacing" Value="2" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextFaint}" />
+    </Style>
+
+    <Style Selector="TextBlock.line">
+      <Setter Property="FontFamily" Value="{StaticResource FontMono}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeCaption}" />
+      <Setter Property="LineHeight" Value="{StaticResource SizeConsoleLineHeight}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Margin" Value="{StaticResource GapConsoleEntry}" />
+    </Style>
+
+    <Style Selector="TextBlock.empty">
+      <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeBody}" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextSecondary}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="TextAlignment" Value="Center" />
+    </Style>
+
+    <!-- A channel is either feeding the console or it is not, so the control is
+         a switch rather than a button. Off reads as a dim outline; on takes the
+         amber signal colour the rest of the app uses for "this is live". -->
+    <Style Selector="ToggleButton.channel">
+      <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeMicro}" />
+      <Setter Property="Padding" Value="{StaticResource InsetButton}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextFaint}" />
+      <Setter Property="BorderBrush" Value="{StaticResource BrushLineHair}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="{StaticResource RadiusPill}" />
+    </Style>
+
+    <Style Selector="ToggleButton.channel /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <Style Selector="ToggleButton.channel:checked">
+      <Setter Property="Foreground" Value="{StaticResource BrushSignalAmber}" />
+      <Setter Property="BorderBrush" Value="{StaticResource BrushSignalAmber}" />
+    </Style>
+
+    <Style Selector="ToggleButton.channel:checked /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="TextBlock.Foreground" Value="{StaticResource BrushSignalAmber}" />
+    </Style>
+
+    <Style Selector="ToggleButton.channel:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource BrushSurfaceRaised}" />
+      <Setter Property="BorderBrush" Value="{StaticResource BrushLineBright}" />
+    </Style>
+
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,*">
+
+    <Border Grid.Row="0"
+            Background="{StaticResource BrushHeaderGround}"
+            BorderBrush="{StaticResource BrushLineHair}"
+            BorderThickness="{StaticResource RuleBottom}"
+            Padding="{StaticResource InsetHeader}">
+      <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*,Auto">
+
+        <Border Grid.Row="0" Grid.Column="0"
+                Width="{StaticResource SizeSpineWidth}"
+                Height="{StaticResource SizeBrandSpineHeight}"
+                Margin="{StaticResource GapSpine}"
+                VerticalAlignment="Center"
+                CornerRadius="{StaticResource RadiusRow}"
+                Background="{StaticResource BrushSignalAmber}" />
+
+        <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Vertical" VerticalAlignment="Center">
+          <TextBlock Classes="brand" Text="CONSOLE" />
+          <TextBlock Classes="eyebrow" Text="DEBUG OUTPUT" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="0" Grid.Column="2"
+                    Orientation="Horizontal"
+                    Spacing="6"
+                    VerticalAlignment="Center">
+          <ToggleButton Classes="channel" Content="MAP" IsChecked="{Binding LogMapping, Mode=TwoWay}" />
+          <ToggleButton Classes="channel" Content="SPELLS" IsChecked="{Binding LogSpells, Mode=TwoWay}" />
+        </StackPanel>
+
+        <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+              Margin="{StaticResource GapHeaderMeta}"
+              ColumnDefinitions="Auto,*">
+          <TextBlock Classes="eyebrow" Grid.Column="0" Text="{Binding CountLine}" />
+          <TextBlock Classes="eyebrow"
+                     Grid.Column="1"
+                     Margin="{StaticResource GapHeaderMetaSource}"
+                     HorizontalAlignment="Right"
+                     Text="CAPPED AT 1000" />
+        </Grid>
+
+      </Grid>
+    </Border>
+
+    <Panel Grid.Row="1" Background="{StaticResource BrushSurfaceVoid}">
+
+      <ScrollViewer Name="ConsoleScroller"
+                    IsVisible="{Binding HasLines}"
+                    HorizontalScrollBarVisibility="Disabled"
+                    VerticalScrollBarVisibility="Auto">
+        <!-- The inset is the list's, not the ScrollViewer's: ScrollViewer
+             measures its content against the unpadded extent, so padding here
+             makes every wrapped line overshoot the viewport and lose its last
+             characters off the right edge. -->
+        <ItemsControl ItemsSource="{Binding Lines}"
+                      Margin="{StaticResource InsetList}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate DataType="vm:ConsoleLineViewModel">
+              <TextBlock Classes="line"
+                         Text="{Binding Line}"
+                         Foreground="{Binding Foreground}" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+
+      <StackPanel IsVisible="{Binding IsEmpty}"
+                  Orientation="Vertical"
+                  Spacing="6"
+                  Margin="{StaticResource InsetPanel}"
+                  VerticalAlignment="Center"
+                  HorizontalAlignment="Center">
+        <TextBlock Classes="empty" Text="Nothing logged yet" />
+        <TextBlock Classes="eyebrow"
+                   MaxWidth="{StaticResource SizeEmptyProseWidth}"
+                   TextAlignment="Center"
+                   TextWrapping="Wrap"
+                   Text="Map and spell parsing write here as your log file is read. Switch a channel off above to quieten it." />
+      </StackPanel>
+
+    </Panel>
+
+  </Grid>
+
+</Window>

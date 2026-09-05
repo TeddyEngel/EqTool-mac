@@ -107,6 +107,10 @@
   <Thickness x:Key="GapHeaderMeta">0,6,0,0</Thickness>
   <Thickness x:Key="GapHeaderMetaSource">10,0,0,0</Thickness>
   <Thickness x:Key="GapSpine">0,0,8,0</Thickness>
+  <!-- A console entry wraps over several lines, so the gap between entries has
+       to beat the leading inside one or a three-line entry reads as three
+       entries. -->
+  <Thickness x:Key="GapConsoleEntry">0,0,0,4</Thickness>
 
   <!-- ===================== Radii and dimensions ===================== -->
 
@@ -130,5 +134,10 @@
   <x:Double x:Key="SizeCountdownColumn">68</x:Double>
   <x:Double x:Key="SizeEmptyRule">40</x:Double>
   <x:Double x:Key="SizeEmptyProseWidth">280</x:Double>
+  <!-- Console lines set their own leading rather than taking the row pitch: a
+       long line wraps, so the pitch has to come from the line box and not from
+       a fixed row height. 14 on 11pt Menlo is the tightest that keeps a
+       wrapped continuation readable as part of the same entry. -->
+  <x:Double x:Key="SizeConsoleLineHeight">14</x:Double>
 
 </ResourceDictionary>

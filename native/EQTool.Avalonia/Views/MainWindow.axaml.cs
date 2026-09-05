@@ -21,6 +21,7 @@ namespace EQTool.Avalonia.Views
             this.FindControl<Button>("ChooseLogFolderButton").Click += OnChooseLogFolderClicked;
             this.FindControl<Button>("OpenMapButton").Click += (_, _) => WindowManager.ShowMap();
             this.FindControl<Button>("OpenDpsButton").Click += (_, _) => WindowManager.ShowDps();
+            this.FindControl<Button>("OpenConsoleButton").Click += (_, _) => WindowManager.ShowConsole();
         }
 
 
