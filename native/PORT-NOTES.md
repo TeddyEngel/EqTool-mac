@@ -1091,3 +1091,21 @@ which is not worth building for one assertion.
 whether the window server routes a real click to the window underneath. Every
 layer beneath that is covered. Observing it needs a visible window and a real
 click on an awake screen.
+
+#### A dead end worth recording: windowNumberAtPoint:
+
+`+[NSWindow windowNumberAtPoint:belowWindowWithWindowNumber:]` looks like it
+should settle the click-routing question without a click, since it is the window
+server's own hit-test rather than a simulation. Two overlapping windows, toggle
+`ignoresMouseEvents` on the top one, see which number comes back.
+
+It did not work here. The windows were created and reported `isVisible` true
+with an alpha of 1.0, but the hit-test returned a window belonging to another
+process in all three states and never responded to the toggle. A follow-up query
+of `NSScreen` state then hung for two minutes and was killed.
+
+This was run with the display asleep, which is the obvious suspect — no live
+compositing context means nothing of ours is a hit target. That was not proven
+though, because the screen query never returned. Recording it as inconclusive
+rather than refuted: the approach may well work with a screen awake, and is
+probably the first thing to retry.
