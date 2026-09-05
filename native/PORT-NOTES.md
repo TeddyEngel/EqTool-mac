@@ -1304,3 +1304,37 @@ and the twenty second upload the guard exists to stop.
 If the answer on location sharing turns out to be no in the broad sense, rather
 than no to the specific upload, this is the next thing to look at, and the cost
 of refusing it is the whole mob info feature.
+
+### Checking the whole network surface, not just the fields
+
+The earlier check listed types holding an `HttpMessageInvoker` field and found
+one. That was too narrow to support the conclusion drawn from it. A client
+created inside a method rather than held in a field would not have appeared, and
+neither would a raw socket, which would bypass the guard completely because it
+never touches `HttpClient`.
+
+The login middlemand is the specific worry there. It is a login proxy, so it
+works at the socket level, and the guard could not see it at all.
+
+Two checks settle it, both against the built assembly rather than the project
+file. The first is what the metadata refers to:
+
+```
+System.Net    System.Net.Http    System.Net.Primitives
+```
+
+No `Socket`, `TcpClient`, `TcpListener`, `UdpClient`, `NetworkStream`,
+`WebRequest`, `WebClient`, `HttpWebRequest` or `SslStream` anywhere.
+
+The second is which of the seven upstream files that build a client or a socket
+have their types present. `DiscordAuthService`, `InventoryWatcherService`,
+`UIFileSyncService`, `LoginMiddlemand` and `SettingsPlayer` are all absent. Two
+names do match, `App` and `LoggingService`, and both resolve to the replacements
+in `Compat/EqToolStubs.cs` rather than the upstream versions: the field listing
+shows `EQTool.App.httpclient` as the only invoker, so the `LoggingService` in
+the build is the one with the empty `Log`.
+
+Five tests hold this in place. One asserts that the guarded client is the only
+holder of an `HttpMessageInvoker`, and four assert that the self-networking
+services stay out of the build. Compiling any of them in would fail loudly
+rather than quietly reopen the hole.

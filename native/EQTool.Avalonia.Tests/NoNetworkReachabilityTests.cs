@@ -294,6 +294,45 @@ namespace EQTool.Avalonia.Tests
         // rather than a stub, which is the path the running client takes. The
         // guard answers before a socket is opened, so they stay offline.
         [TestMethod]
+        public void OnlyTheGuardedClientHoldsAnHttpClient()
+        {
+            // Arrange
+            // The guard protects one HttpClient. Anything holding its own would
+            // bypass it entirely, which is how LoggingService behaves upstream:
+            // it posts exception text, and PlayerTrackerService calls it from the
+            // catch around the request the guard refuses.
+            var holders = CoreAssembly.GetTypes()
+                .SelectMany(t => t
+                    .GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)
+                    .Where(f => typeof(HttpMessageInvoker).IsAssignableFrom(f.FieldType))
+                    .Select(f => $"{t.FullName}.{f.Name}"))
+                .ToList();
+
+            // Assert
+            CollectionAssert.AreEquivalent(
+                new[] { "EQTool.App.httpclient" },
+                holders,
+                "Something other than the guarded client now holds an HttpClient: " + string.Join(", ", holders));
+        }
+
+        [TestMethod]
+        [DataRow("DiscordAuthService")]
+        [DataRow("InventoryWatcherService")]
+        [DataRow("UIFileSyncService")]
+        [DataRow("LoginMiddlemand")]
+        public void NetworkingServicesTheClientDoesNotUse_StayOutOfTheBuild(string typeName)
+        {
+            // Arrange
+            // Each of these builds its own client or socket upstream. The login
+            // middlemand is a proxy and would not go through HttpClient at all,
+            // so the guard could not see it.
+            var present = CoreAssembly.GetTypes().Any(t => t.Name == typeName);
+
+            // Assert
+            Assert.IsFalse(present, $"{typeName} is now compiled in and does its own networking, which the guard cannot see.");
+        }
+
+        [TestMethod]
         public void SendPlayerData_ThroughTheRealApi_IsRefusedWithoutThrowing()
         {
             // Arrange
