@@ -23,6 +23,8 @@ namespace EQTool.Avalonia.Services
 
         public static void ShowDps() => Show(() => new DpsWindow());
 
+        public static void ShowSettings() => Show(() => new SettingsWindow());
+
         public static void ShowConsole() => Show(() => new ConsoleWindow());
 
         public static void ShowMobInfo() => Show(() => new MobInfoWindow());

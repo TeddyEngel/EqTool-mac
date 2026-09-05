@@ -1,0 +1,226 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:EQTool.Avalonia.ViewModels"
+        x:Class="EQTool.Avalonia.Views.SettingsWindow"
+        x:DataType="vm:SettingsWindowViewModel"
+        Title="PigParse Settings"
+        Width="520"
+        Height="620"
+        MinWidth="420"
+        MinHeight="380"
+        Background="{StaticResource BrushWindowGround}">
+
+  <Window.Styles>
+
+    <Style Selector="TextBlock.eyebrow">
+      <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeMicro}" />
+      <Setter Property="LetterSpacing" Value="2" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextFaint}" />
+    </Style>
+
+    <Style Selector="TextBlock.brand">
+      <Setter Property="FontFamily" Value="{StaticResource FontDisplay}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeHeading}" />
+      <Setter Property="FontWeight" Value="DemiBold" />
+      <Setter Property="LetterSpacing" Value="2" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}" />
+    </Style>
+
+    <Style Selector="TextBlock.label">
+      <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeBody}" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="TextBlock.hint">
+      <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeMicro}" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextFaint}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+    <Style Selector="TextBlock.value">
+      <Setter Property="FontFamily" Value="{StaticResource FontMono}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeCaption}" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextSecondary}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="TextBlock.section">
+      <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeMicro}" />
+      <Setter Property="LetterSpacing" Value="2" />
+      <Setter Property="Foreground" Value="{StaticResource BrushSignalAmber}" />
+      <Setter Property="Margin" Value="0,12,0,6" />
+    </Style>
+
+    <Style Selector="Button.ghost">
+      <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeMicro}" />
+      <Setter Property="Foreground" Value="{StaticResource BrushSignalAmber}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="{StaticResource BrushLineHair}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Padding" Value="{StaticResource InsetButton}" />
+      <Setter Property="CornerRadius" Value="{StaticResource RadiusPill}" />
+    </Style>
+
+    <Style Selector="Button.ghost:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource BrushSurfaceRaised}" />
+    </Style>
+
+    <Style Selector="CheckBox">
+      <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeBody}" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}" />
+    </Style>
+
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,*">
+
+    <Border Grid.Row="0"
+            Background="{StaticResource BrushHeaderGround}"
+            BorderBrush="{StaticResource BrushLineHair}"
+            BorderThickness="{StaticResource RuleBottom}"
+            Padding="{StaticResource InsetHeader}">
+      <StackPanel Orientation="Vertical" Spacing="2">
+        <TextBlock Classes="brand" Text="SETTINGS" />
+        <TextBlock Classes="eyebrow" Text="SAVED AS YOU CHANGE THEM" />
+      </StackPanel>
+    </Border>
+
+    <TabControl Grid.Row="1" Name="SettingsTabs" Padding="{StaticResource InsetList}">
+
+      <TabItem Header="General">
+        <ScrollViewer>
+          <StackPanel Orientation="Vertical" Spacing="8" Margin="{StaticResource InsetList}">
+
+            <TextBlock Classes="section" Text="EVERQUEST" />
+
+            <TextBlock Classes="label" Text="Log folder" />
+            <TextBlock Classes="value"
+                       Text="{Binding EqLogDirectory}"
+                       IsVisible="{Binding HasEqLogDirectory}"
+                       TextWrapping="Wrap" />
+            <TextBlock Classes="hint"
+                       Text="Not set. PigParse reads this folder to find your character's log."
+                       IsVisible="{Binding !HasEqLogDirectory}" />
+            <Button Classes="ghost"
+                    Name="ChooseLogFolderButton"
+                    HorizontalAlignment="Left"
+                    Content="Choose log folder…" />
+
+            <TextBlock Classes="section" Text="DISPLAY" />
+
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <TextBlock Grid.Column="0" Classes="label" Text="Font size" Width="110" />
+              <Slider Grid.Column="1"
+                      Minimum="9" Maximum="24"
+                      TickFrequency="1"
+                      IsSnapToTickEnabled="True"
+                      Value="{Binding FontSize}" />
+              <TextBlock Grid.Column="2" Classes="value" Text="{Binding FontSize}" Width="34" />
+            </Grid>
+
+            <CheckBox IsChecked="{Binding LogArchiveEnabled}"
+                      Content="Archive the log file when it grows large" />
+
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="Alerts">
+        <ScrollViewer>
+          <StackPanel Orientation="Vertical" Spacing="8" Margin="{StaticResource InsetList}">
+
+            <TextBlock Classes="section" Text="SOUND" />
+
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <TextBlock Grid.Column="0" Classes="label" Text="Volume" Width="110" />
+              <Slider Grid.Column="1"
+                      Minimum="0" Maximum="100"
+                      TickFrequency="5"
+                      IsSnapToTickEnabled="True"
+                      Value="{Binding AudioVolume}" />
+              <TextBlock Grid.Column="2" Classes="value" Text="{Binding AudioVolume}" Width="34" />
+            </Grid>
+
+            <TextBlock Classes="section" Text="SPEECH" />
+
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <TextBlock Grid.Column="0" Classes="label" Text="Voice" Width="110" />
+              <ComboBox Grid.Column="1"
+                        HorizontalAlignment="Stretch"
+                        ItemsSource="{Binding Voices}"
+                        SelectedItem="{Binding SelectedVoice}" />
+              <Button Grid.Column="2"
+                      Classes="ghost"
+                      Name="PreviewVoiceButton"
+                      Margin="6,0,0,0"
+                      Content="Test" />
+            </Grid>
+            <TextBlock Classes="hint"
+                       Text="Spoken alerts use the macOS say command. English voices are listed first." />
+
+            <TextBlock Classes="section" Text="WHAT TO SHOW" />
+
+            <CheckBox IsChecked="{Binding YouOnlySpells}"
+                      Content="Only show spells cast on me" />
+            <CheckBox IsChecked="{Binding ShowRandomRolls}"
+                      Content="Show random rolls" />
+            <CheckBox IsChecked="{Binding ShowRing8RollTime}"
+                      Content="Show Ring 8 timer" />
+            <CheckBox IsChecked="{Binding ShowScoutRollTime}"
+                      Content="Show Scout timer" />
+
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="Windows">
+        <ScrollViewer>
+          <StackPanel Orientation="Vertical" Spacing="8" Margin="{StaticResource InsetList}">
+
+            <TextBlock Classes="section" Text="PER WINDOW" />
+
+            <Grid ColumnDefinitions="110,Auto,*,Auto" Margin="0,0,0,4">
+              <TextBlock Grid.Column="1" Classes="eyebrow" Text="ON TOP" Margin="0,0,10,0" />
+              <TextBlock Grid.Column="2" Classes="eyebrow" Text="OPACITY" />
+            </Grid>
+
+            <ItemsControl ItemsSource="{Binding WindowPreferences}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="vm:WindowPreferenceViewModel">
+                  <Grid ColumnDefinitions="110,Auto,*,Auto" Margin="0,0,0,4">
+                    <TextBlock Grid.Column="0" Classes="label" Text="{Binding Label}" />
+                    <CheckBox Grid.Column="1" IsChecked="{Binding AlwaysOnTop}" Margin="0,0,10,0" />
+                    <Slider Grid.Column="2"
+                            Minimum="0.2" Maximum="1.0"
+                            TickFrequency="0.05"
+                            IsSnapToTickEnabled="True"
+                            Value="{Binding Opacity}" />
+                    <TextBlock Grid.Column="3" Classes="value" Text="{Binding Opacity, StringFormat={}{0:0.00}}" Width="42" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <TextBlock Classes="section" Text="OVERLAY" />
+
+            <CheckBox IsChecked="{Binding OverlayClickThrough}"
+                      Content="Let clicks pass through overlay windows" />
+            <TextBlock Classes="hint"
+                       Text="Applies to overlays when they are next opened." />
+
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+    </TabControl>
+
+  </Grid>
+
+</Window>
