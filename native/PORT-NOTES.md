@@ -1286,3 +1286,21 @@ and the result no longer matches.
 Comparing the whole path closes both, and costs nothing: `WikiApi` posts to
 exactly `/api/item/wiki` with no query string. Five refusal cases and the real
 call are covered by tests.
+
+### The one allowed endpoint does report your zone
+
+Worth stating plainly, because the guard was first commented as though the
+allowed call sent nothing of interest. It is a POST, not a lookup by URL, and
+the body is `P99WikiLookup`, which is a name and a zone. So with the guard in
+place the client still tells the service which zone the character is standing in
+every time something is conned.
+
+It stays allowed because refusing it does not degrade the mob info window, it
+removes it: the wiki result is the window's content, and the price lookup that
+the guard already refuses is only a column within it. What it does not carry is
+a character name, a guild, or coordinates, which is the difference between this
+and the twenty second upload the guard exists to stop.
+
+If the answer on location sharing turns out to be no in the broad sense, rather
+than no to the specific upload, this is the next thing to look at, and the cost
+of refusing it is the whole mob info feature.

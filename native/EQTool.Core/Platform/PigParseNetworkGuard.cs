@@ -28,8 +28,12 @@ namespace EQTool.Core.Platform
     {
         public const string PigParseHost = "pigparse.azurewebsites.net";
 
-        // The mob info window's wiki lookup. Read-only, sends no character data,
-        // and the feature is wired up and in use.
+        // The mob info window's wiki lookup, which the client posts on every con.
+        // It is not free of character data: the body is a name and the zone the
+        // character is standing in. It is allowed because refusing it removes the
+        // mob info window entirely rather than degrading it, and because it
+        // carries no character name, guild or coordinates. Worth revisiting if
+        // the answer to location sharing is no.
         private static readonly string[] AllowedPaths = new[]
         {
             "/api/item/wiki",
