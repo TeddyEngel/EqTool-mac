@@ -1432,3 +1432,41 @@ than retried again.
 What is left is one step: whether the window server hands the click to whatever
 is underneath. Everything before that is now covered, including the setter
 working on the window the client actually shows.
+
+### Click-through verified, and a correction to the note above
+
+A real click does reach the window underneath the overlay. Measured, not
+inferred, so the section above about `windowNumberAtPoint` needs correcting too.
+
+The harness was the same throwaway project referencing the real Avalonia client:
+two overlapping windows, both with a `PointerPressed` handler, `ignoresMouseEvents`
+driven through the production `MacOSWindowInterop`, and the click posted with
+`CGEventPost` to the HID tap. Resetting the z-order with `orderFront:` before
+each trial matters, because clicking the lower window raises it and the next
+trial then measures stacking instead of the flag.
+
+| flag | front at point | click received by |
+| --- | --- | --- |
+| false | top | top |
+| true | bottom | bottom |
+| false | top | top |
+
+The first row is the control. If posting were blocked or the handlers were not
+wired, nothing would arrive in any row, which is exactly what happened on the
+first attempt: the trial loop slept on the UI thread, so the run loop that had to
+deliver the click was blocked. Posting the clicks from a background thread fixed
+it. `AXIsProcessTrusted` is true here and a posted move does shift the cursor, so
+permissions were never the obstacle.
+
+Two earlier conclusions in this file were wrong and are withdrawn:
+
+- `windowNumberAtPoint:belowWindowWithWindowNumber:` does track
+  `ignoresMouseEvents`. The run that suggested otherwise was confounded by
+  z-order. It is a usable check.
+- The remaining gap was described as needing a person at the keyboard. It did
+  not. A synthetic click through the HID tap answers it, provided the UI thread
+  is left free to process the event.
+
+This closes the click-through question for the native client. It says nothing
+about the Wine path, where `WS_EX_TRANSPARENT` never reaches Cocoa and opaque
+overlay pixels still swallow clicks.
