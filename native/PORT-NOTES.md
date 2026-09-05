@@ -1661,3 +1661,26 @@ setting `Window.FontSize` would change the few controls that do not name a token
 and leave the rest alone. A control that changes some of the text is worse than
 one that changes none, and choosing how a user font size should fold into a type
 scale is a design decision rather than a repair.
+
+### The rest of the settings surface is wired
+
+Having found dead settings, the same question was worth asking of the controls
+themselves rather than the values behind them. Two checks, both clean.
+
+Every `Button` across the seven views resolves to something: a `Click`, a
+`Command`, or a name the code-behind attaches a handler to. Every one of the
+forty-two bindings in `SettingsWindow.axaml` resolves to a real property on the
+view models or on the settings model.
+
+`ShowRing8RollTime` is worth naming because it looked suspicious and is not. It
+did not appear in the earlier list of settings the view model writes, but it is
+read by `SpellWindowViewModel`, which is compiled in and registered.
+
+Both first attempts at these checks were wrong, in the same direction: they
+reported problems that were not there. Matching `<Button[^>]*` misses elements
+written across several lines, which is most of them, and the property check
+missed declarations whose brace sits on the next line. Each was caught by
+disagreeing with something already known by hand, the button sweep flagging a
+settings button verified minutes earlier as unwired. A sweep that contradicts a
+checked fact is measuring badly, and its other rows are worth nothing until it
+agrees.
