@@ -1109,3 +1109,37 @@ compositing context means nothing of ours is a hit target. That was not proven
 though, because the screen query never returned. Recording it as inconclusive
 rather than refuted: the approach may well work with a screen awake, and is
 probably the first thing to retry.
+
+### The 28 failing Core tests are not all the same thing
+
+Twenty-seven of them are path-combine helpers fed Windows drive letters
+(`C:\Everquest`, `C:\Program Files (x86)\Everquest`). .NET on macOS does not
+treat a backslash as a directory separator, so the inputs never split. That is
+test data describing a Windows machine, and nothing in the Mac build reaches it.
+
+The twenty-eighth, `UIFileNameTests.ParsesFullPath`, is worth separating out. It
+fails the same way, returning `C:\Everquest\UI_Pigy` where `Pigy` was wanted,
+but it covers a parser that pulls a character name out of a UI file path rather
+than a path helper.
+
+`UIFileName` is compiled into the Mac build, because the core project takes all
+of `EQToolShared` by wildcard. It is unreachable, though: its only caller
+anywhere upstream is `UIFileSyncService`, which is not linked in, and the
+Avalonia client never mentions it. Inert as things stand.
+
+It stops being inert the moment UI file sync is wired up. Two of that service's
+six calls hand `TryParse` a full path rather than a file name:
+
+```
+UIFileName.TryParse(e.FullPath, out var info)   // watcher event
+UIFileName.TryParse(f, out var info)            // enumerated file
+```
+
+Fed a macOS path those are fine, since `GetFileName` splits on forward slashes.
+Fed a Windows-shaped path they return the whole string as the character name.
+Both are reachable that way: the EverQuest install sits behind Wine, and a
+`settings.json` carried over from a Windows install stores Windows paths.
+
+So this failure is a precondition on that feature, not a dismissible one. If UI
+file sync is ever enabled, route those two calls through `MacPathNormalizer`
+first and make `ParsesFullPath` pass.
