@@ -33,7 +33,9 @@ namespace EQTool.Avalonia.Services
             _ = builder.RegisterInstance(bootstrap.Loader).AsSelf().SingleInstance();
 
             _ = builder.RegisterType<AvaloniaAppDispatcher>().As<IAppDispatcher>().SingleInstance();
-            _ = builder.RegisterType<SilentTextToSpeach>().As<ITextToSpeach>().SingleInstance();
+            _ = builder.RegisterType<EQTool.Core.Platform.ProcessLauncher>()
+                .As<EQTool.Core.Platform.IProcessLauncher>().SingleInstance();
+            _ = builder.RegisterType<EQTool.Core.Platform.MacTextToSpeach>().As<ITextToSpeach>().SingleInstance();
 
             RegisterCoreTypes(builder);
 
@@ -49,7 +51,10 @@ namespace EQTool.Avalonia.Services
             _ = builder.RegisterType<EQTool.ViewModels.MobInfoComponents.MobInfoManagementViewModel>().AsSelf().SingleInstance();
             _ = builder.RegisterType<EQTool.ViewModels.DPSWindowViewModel>().AsSelf().SingleInstance();
             _ = builder.RegisterType<EQToolShared.Discord.DiscordAuctionParse>().AsSelf().SingleInstance();
-            _ = builder.RegisterType<AudioService>().As<IAudioService>().SingleInstance();
+            // Not the linked AudioService: that is built on
+            // System.Windows.Media.MediaPlayer, which resolves to an empty shim here
+            // and would play nothing while looking wired.
+            _ = builder.RegisterType<EQTool.Core.Platform.MacAudioService>().As<IAudioService>().SingleInstance();
             _ = builder.RegisterType<FightHistory>().AsSelf().SingleInstance();
             _ = builder.RegisterType<SpellDurations>().AsSelf().SingleInstance();
 
