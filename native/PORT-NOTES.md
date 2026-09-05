@@ -851,17 +851,41 @@ serves. If that fails identically, the cause is environmental rather than
 anything in this project. It did, which is how this was ruled out as a
 clean-build regression.
 
-### Clean-build survival of the settings symlink: not yet proven
+### Clean-build survival of the settings symlink: verified
 
-`MacSettingsStoreTests` covers the symlink logic against temporary directories,
-including a simulated wipe of the build output, and those pass. The end-to-end
-case is only half verified:
+`MacSettingsStoreTests` covers the logic against temporary directories,
+including a simulated wipe of the build output. The end-to-end case was then
+confirmed on a real clean, with the display awake:
 
-- Proven: after `dotnet clean` plus deleting `bin/` and `obj/`, the canonical
-  file under `~/Library/Application Support/PigParse` survives untouched. A
-  marker written into it before the clean was still present afterwards.
-- Not proven: that a subsequent launch recreates the symlink in the fresh build
-  output. The app could not start for the reason above, so the run proved
-  nothing either way.
+1. Baseline: `~/Library/Application Support/PigParse/settings.json`, 74108
+   bytes, `DefaultEqDirectory` of `C:\EQ`.
+2. `dotnet clean` plus `rm -rf bin obj`. Symlinks under the build output: zero.
+3. Rebuild and launch.
+4. `bin/Debug/net9.0/osx-x64/settings.json` is a symlink to the canonical file
+   again, and the canonical file is untouched at 74108 bytes with
+   `DefaultEqDirectory` still `C:\EQ`.
 
-Re-run with the display awake to close this out.
+The check reads the existing value rather than writing a probe into it. An
+earlier attempt did write a marker into the real settings file, which then had
+to be repaired; there is no reason to mutate user data to observe whether it
+survived.
+
+### Capturing a window that is behind other windows
+
+`screencapture -R x,y,w,h` captures a region of the *screen*, so anything
+stacked on top lands in the image instead of the window you wanted. Chasing the
+Wine build's settings window that way produced two captures of an editor and a
+terminal before the cause was obvious.
+
+Capture by window ID instead, which ignores stacking:
+
+```bash
+# find the id (owner filter is the useful part; Wine reports owner "wine")
+swift winid.swift        # CGWindowListCopyWindowInfo -> kCGWindowNumber
+screencapture -x -o -l <windowId> /tmp/window.png
+```
+
+`CGWindowListCopyWindowInfo` also gives the window name, which is how the Wine
+window was confirmed to be `SettingManagement` rather than a stray Wine desktop
+window, and the layer, which distinguishes the tray icon (layer 25) from the
+app window (layer 0).
