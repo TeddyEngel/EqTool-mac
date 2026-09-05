@@ -113,6 +113,11 @@
                     HorizontalAlignment="Left"
                     Content="Choose log folder…" />
 
+            <TextBlock Classes="hint"
+                       Text="EverQuest is not writing a log. Nothing here will update until logging is on: set Log=TRUE in eqclient.ini, or turn it on from inside the game."
+                       IsVisible="{Binding EqLoggingIsOff}"
+                       TextWrapping="Wrap" />
+
             <TextBlock Classes="section" Text="DISPLAY" />
 
             <Grid ColumnDefinitions="Auto,*,Auto">

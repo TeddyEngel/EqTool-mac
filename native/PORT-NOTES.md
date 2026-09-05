@@ -1798,3 +1798,36 @@ pattern is consistent enough to name: a quick grep across a tree that contains
 game data, test fixtures and an uncompiled WPF application will answer almost any
 question affirmatively, and none of those answers say anything about what the Mac
 build does. The reliable question is whether a type is in the built assembly.
+
+### EverQuest logging being off is now visible
+
+This was sitting in a list of optional extras, which was the wrong place for it.
+The client reads EverQuest's log file and nothing else. With EverQuest's own
+logging switched off that file never grows, so every window stays empty and
+there was no indication why: the settings window checked whether the log folder
+was set, and never whether anything was being written into it.
+
+`FindEq.TryCheckLoggingEnabled` was already compiled into this build. It simply
+was not called.
+
+The tri-state matters. It returns null when `eqclient.ini` cannot be read at all,
+which is the ordinary state before an install has been located, so only an
+explicit false raises the warning. Writing `!TryCheckLoggingEnabled(dir)` instead
+would show it to everyone on first run, and it looks like the tidier expression,
+which is why the comparison carries a comment.
+
+Six tests, all against a temporary directory rather than a real install. They
+cover the file saying true and false, the file being absent, no directory set at
+all, hand-edited spacing and casing, and rechecking when the directory changes.
+Removing the recheck from the setter fails that last one.
+
+Enabling logging from here is a separate question. Upstream writes `Log=TRUE`
+into `eqclient.ini` from `SettingsGeneral.xaml.cs`, which is not compiled, and
+writing to a file EverQuest may have open is a different kind of change from
+reading one. The warning names both routes and leaves the choice with the reader.
+
+A process note, since it cost real work. Mutation testing by editing a file and
+reverting with `git checkout --` destroys anything uncommitted in that file. The
+first mutation was fine; reverting it threw away the entire feature, which was
+still unstaged, and the next mutation then failed to find its anchor. Commit
+first, mutate second.

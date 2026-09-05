@@ -119,6 +119,8 @@ namespace EQTool.Avalonia.ViewModels
                     () => WindowManager.ApplyPreferencesTo<Views.EventOverlayWindow>(
                         settings.OverlayWindowState, asOverlay: true))
             };
+
+            RefreshLoggingState();
         }
 
         public TriggerEditorViewModel TriggerEditor { get; }
@@ -138,7 +140,32 @@ namespace EQTool.Avalonia.ViewModels
         public string EqDirectory
         {
             get => settings.DefaultEqDirectory;
-            set { settings.DefaultEqDirectory = value; OnPropertyChanged(); Save(); }
+            set
+            {
+                settings.DefaultEqDirectory = value;
+                OnPropertyChanged();
+                RefreshLoggingState();
+                Save();
+            }
+        }
+
+        // Whether EverQuest itself is writing a log. The whole client reads that
+        // file, so with this off nothing ever appears and there is otherwise no
+        // sign of why.
+        //
+        // TryCheckLoggingEnabled returns null when eqclient.ini cannot be read at
+        // all, which is the ordinary case before an install has been located.
+        // Only an explicit false is worth warning about; warning on null would
+        // fire for everyone who has not set the directory yet.
+        public bool EqLoggingIsOff { get; private set; }
+
+        public void RefreshLoggingState()
+        {
+            var directory = settings.DefaultEqDirectory;
+            EqLoggingIsOff = !string.IsNullOrWhiteSpace(directory)
+                && FindEq.TryCheckLoggingEnabled(directory) == false;
+
+            OnPropertyChanged(nameof(EqLoggingIsOff));
         }
 
         public int FontSize
