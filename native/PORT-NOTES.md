@@ -2184,3 +2184,33 @@ nothing from an unchanged file, following a rotated file and following a
 character switch are each worth pinning and would catch other regressions. They
 are simply blind to this one, and a mutation run is the only way that becomes
 visible.
+
+### The trigger timer lifecycle had no test at all
+
+Last note closed by saying timers firing and expiring need a real client in front
+of a real player. That was wrong, and it was the fourth time this session that
+something was called untestable without being tried.
+
+`TriggerTimerManager` appears in no test file, upstream's or mine. Upstream's
+`TriggerTests` cover loading triggers, folder layout, built-in defaults and
+duplicate merging, none of which touch the timer lifecycle.
+
+That is the code a real fault already lived in. The manager prunes its list of
+running timers from `Tick`, `Tick` comes from the `DispatcherTimer` shim, and the
+shim does nothing until a host is installed. Without one the list never shrank, a
+second match on the same timer found the stale entry, took the restart branch,
+and updated a view model that had already left the spell list, so the row never
+returned. Installing a host fixed it and nothing locked it.
+
+It needs neither a game nor a screen. `DispatcherTimer.Host` is an interface
+behind a settable static, so a test host can capture the scheduled callback and
+fire it on demand.
+
+The configuration matters more than it looks. `RestartBehavior` defaults to
+`StartNewTimer`, which adds a row whether or not the expired one was pruned, so a
+test using the default passes with the fault present. Only `RestartTimer` reaches
+the branch that mutates an existing entry, which is where this breaks.
+
+Four tests: a match adds a row, resolving the manager schedules a tick at all, a
+tick before expiry leaves a running timer alone, and after expiry plus a tick the
+same trigger starts a fresh timer rather than quietly updating a row that is gone.
