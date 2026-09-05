@@ -1391,3 +1391,44 @@ hypothesis rather than a demonstrated fact, and it is where this stopped.
 Anyone retrying should do it from inside the Avalonia client, which is a regular
 application and owns a real overlay window, instead of from a script. The
 alternative remains a person clicking once.
+
+### windowNumberAtPoint answers a different question, and the interop works
+
+Run from a throwaway harness inside the repo that referenced the real Avalonia
+project, so the windows were real Avalonia windows and the calls went through
+the production `MacOSWindowInterop`. Two things came out of it.
+
+The first is that the earlier failures were mostly a coordinate mistake. The API
+wants Cocoa screen coordinates, with the origin at the bottom left, while
+`Window.Position` is top left. Asking the `NSWindow` for its own `frame` removes
+the guesswork: a window placed at `PixelPoint(380, 380)` on a 1440 tall display
+reports `y=910`, and the centre of that frame does hit the right window. Note
+that `frame` returns an `NSRect`, which needs `objc_msgSend_stret` on x86_64.
+
+Two earlier explanations were wrong and are worth striking out. The point was
+reaching the call correctly all along, and the activation policy was not the
+problem either: the Avalonia harness reports policy `0`, a regular application,
+and the result did not change.
+
+The second, and the useful part, is the control that ran alongside it. Reading
+`ignoresMouseEvents` back after each call to
+`MacOSWindowInterop.SetIgnoresMouseEvents` gave false, then true, then false, in
+step with the calls. That is the production interop working on a real overlay
+window, which until now had only been shown on a synthetic `NSWindow` built by
+hand in a script.
+
+With that control in place the negative result means something:
+
+```
+RESULT_OFF_IS_TOP    : True     the hit test does find the window
+RESULT_TOGGLE_CHANGED: False    toggling click-through does not change its answer
+```
+
+So `windowNumberAtPoint:belowWindowWithWindowNumber:` reports which window is
+geometrically in front, not which window an event would be delivered to. It
+cannot stand in for a click, and this line should be recorded as refuted rather
+than retried again.
+
+What is left is one step: whether the window server hands the click to whatever
+is underneath. Everything before that is now covered, including the setter
+working on the window the client actually shows.
