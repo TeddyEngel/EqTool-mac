@@ -28,6 +28,14 @@ namespace EQTool.Avalonia.Views
                 this.FindControl<TabControl>("SettingsTabs").SelectedIndex = tabIndex;
         }
 
+        // Declared in XAML rather than resolved with FindControl: this button lives
+        // inside a TabItem, whose content is not realised until the tab is first
+        // selected, so a constructor lookup would find nothing.
+        private void OnPreviewTriggerClicked(object sender, RoutedEventArgs e)
+        {
+            viewModel.TriggerEditor.PreviewOutput();
+        }
+
         private void InitializeComponent()
         {
             AvaloniaXamlLoader.Load(this);

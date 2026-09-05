@@ -79,6 +79,7 @@ namespace EQTool.Avalonia.ViewModels
             speech = services.Resolve<ITextToSpeach>();
 
             Voices = MacVoiceCatalog.Available().Select(a => a.Name).ToList();
+            TriggerEditor = new TriggerEditorViewModel(services);
 
             WindowPreferences = new List<WindowPreferenceViewModel>
             {
@@ -90,6 +91,8 @@ namespace EQTool.Avalonia.ViewModels
                 new WindowPreferenceViewModel("Overlay", settings.OverlayWindowState, Save)
             };
         }
+
+        public TriggerEditorViewModel TriggerEditor { get; }
 
         public IReadOnlyList<string> Voices { get; }
 

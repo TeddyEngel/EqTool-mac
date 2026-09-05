@@ -219,6 +219,94 @@
         </ScrollViewer>
       </TabItem>
 
+
+      <TabItem Header="Triggers">
+        <Grid ColumnDefinitions="220,*" DataContext="{Binding TriggerEditor}">
+
+          <Grid Grid.Column="0" RowDefinitions="Auto,Auto,*" Margin="{StaticResource InsetList}">
+            <TextBox Grid.Row="0"
+                     Watermark="Filter triggers"
+                     Text="{Binding FilterText}" />
+            <TextBlock Grid.Row="1"
+                       Classes="hint"
+                       Margin="0,4,0,4"
+                       Text="{Binding TriggerCountText}" />
+            <ListBox Grid.Row="2"
+                     ItemsSource="{Binding Triggers}"
+                     SelectedItem="{Binding Selected}">
+              <ListBox.ItemTemplate>
+                <DataTemplate DataType="vm:TriggerRowViewModel">
+                  <Grid ColumnDefinitions="Auto,*" Margin="0,1,0,1">
+                    <CheckBox Grid.Column="0" IsChecked="{Binding Enabled}" Margin="0,0,6,0" />
+                    <StackPanel Grid.Column="1" Orientation="Vertical">
+                      <TextBlock Classes="label" Text="{Binding Name}" />
+                      <TextBlock Classes="hint" Text="{Binding Badge}" />
+                    </StackPanel>
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </Grid>
+
+          <ScrollViewer Grid.Column="1" IsVisible="{Binding HasSelection}">
+            <StackPanel Orientation="Vertical" Spacing="6" Margin="{StaticResource InsetList}">
+
+              <TextBlock Classes="section" Text="MATCH" />
+              <TextBlock Classes="label" Text="Name" />
+              <TextBox Text="{Binding TriggerName}" />
+              <TextBlock Classes="label" Text="Search text" />
+              <TextBox Text="{Binding SearchText}" AcceptsReturn="False" />
+              <CheckBox IsChecked="{Binding UseRegex}" Content="Treat search text as a regular expression" />
+
+              <TextBlock Classes="section" Text="WHEN IT FIRES" />
+              <CheckBox IsChecked="{Binding DisplayTextEnabled}" Content="Show text on the overlay" />
+              <TextBox Text="{Binding DisplayText}" />
+
+              <Grid ColumnDefinitions="Auto,*,Auto">
+                <TextBlock Grid.Column="0" Classes="label" Text="Alert" Width="70" />
+                <ComboBox Grid.Column="1"
+                          HorizontalAlignment="Stretch"
+                          ItemsSource="{Binding AudioTypes}"
+                          SelectedItem="{Binding AudioType}" />
+                <Button Grid.Column="2" Classes="ghost" Click="OnPreviewTriggerClicked" Margin="6,0,0,0" Content="Test" />
+              </Grid>
+
+              <TextBox Text="{Binding TtsText}" Watermark="Spoken text" IsVisible="{Binding IsTextToSpeech}" />
+              <TextBox Text="{Binding SoundFile}" Watermark="Path to a sound file" IsVisible="{Binding IsSoundFile}" />
+
+              <TextBlock Classes="section" Text="TIMER" />
+              <Grid ColumnDefinitions="Auto,*">
+                <TextBlock Grid.Column="0" Classes="label" Text="Type" Width="70" />
+                <ComboBox Grid.Column="1"
+                          HorizontalAlignment="Stretch"
+                          ItemsSource="{Binding TimerTypes}"
+                          SelectedItem="{Binding TimerType}" />
+              </Grid>
+
+              <StackPanel Orientation="Vertical" Spacing="6" IsVisible="{Binding HasTimer}">
+                <TextBlock Classes="label" Text="Timer name" />
+                <TextBox Text="{Binding TimerName}" />
+                <Grid ColumnDefinitions="Auto,*,Auto,*">
+                  <TextBlock Grid.Column="0" Classes="label" Text="Min" Width="40" />
+                  <NumericUpDown Grid.Column="1" Minimum="0" Maximum="180" Increment="1" Value="{Binding TimerMinutes}" />
+                  <TextBlock Grid.Column="2" Classes="label" Text="Sec" Width="40" Margin="8,0,0,0" />
+                  <NumericUpDown Grid.Column="3" Minimum="0" Maximum="59" Increment="1" Value="{Binding TimerSeconds}" />
+                </Grid>
+              </StackPanel>
+
+            </StackPanel>
+          </ScrollViewer>
+
+          <TextBlock Grid.Column="1"
+                     Classes="hint"
+                     Margin="24"
+                     VerticalAlignment="Center"
+                     TextAlignment="Center"
+                     IsVisible="{Binding !HasSelection}"
+                     Text="Pick a trigger on the left to edit what it matches and what it does." />
+
+        </Grid>
+      </TabItem>
     </TabControl>
 
   </Grid>
