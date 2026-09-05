@@ -13,11 +13,18 @@ namespace EQTool.Avalonia.Views
     {
         private readonly SettingsWindowViewModel viewModel;
 
-        public SettingsWindow()
+        public SettingsWindow() : this(new SettingsWindowViewModel())
+        {
+        }
+
+        // Taking the view model lets the window be shown against throwaway settings.
+        // The parameterless path builds one from AppServices, which reads the real
+        // settings file and starts the log parser.
+        public SettingsWindow(SettingsWindowViewModel viewModel)
         {
             InitializeComponent();
 
-            viewModel = new SettingsWindowViewModel();
+            this.viewModel = viewModel;
             DataContext = viewModel;
 
             this.FindControl<Button>("ChooseLogFolderButton").Click += OnChooseLogFolderClicked;
