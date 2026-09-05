@@ -1,0 +1,303 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:EQTool.Avalonia.ViewModels"
+        x:Class="EQTool.Avalonia.Views.MobInfoWindow"
+        x:DataType="vm:MobInfoWindowViewModel"
+        Title="PigParse Mob Info"
+        Width="380"
+        Height="640"
+        MinWidth="320"
+        MinHeight="260"
+        Background="{StaticResource BrushWindowGround}">
+
+  <Window.Styles>
+
+    <Style Selector="TextBlock.eyebrow">
+      <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeMicro}" />
+      <Setter Property="LetterSpacing" Value="2" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextFaint}" />
+    </Style>
+
+    <Style Selector="TextBlock.mobname">
+      <Setter Property="FontFamily" Value="{StaticResource FontDisplay}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeTitle}" />
+      <Setter Property="FontWeight" Value="DemiBold" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}" />
+      <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <Style Selector="TextBlock.subtitle">
+      <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeCaption}" />
+      <Setter Property="Foreground" Value="{StaticResource BrushSignalMint}" />
+    </Style>
+
+    <Style Selector="TextBlock.section">
+      <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeMicro}" />
+      <Setter Property="LetterSpacing" Value="2" />
+      <Setter Property="Foreground" Value="{StaticResource BrushSignalAmber}" />
+    </Style>
+
+    <Style Selector="TextBlock.statvalue">
+      <Setter Property="FontFamily" Value="{StaticResource FontMono}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeRow}" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}" />
+      <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <Style Selector="TextBlock.rowname">
+      <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeRow}" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <Style Selector="TextBlock.price">
+      <Setter Property="FontFamily" Value="{StaticResource FontMono}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeMicro}" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextFaint}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="HorizontalAlignment" Value="Right" />
+    </Style>
+
+    <Style Selector="TextBlock.notice">
+      <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeCaption}" />
+      <Setter Property="Foreground" Value="{StaticResource BrushSignalRose}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+    <Style Selector="TextBlock.empty">
+      <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeHeading}" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextSecondary}" />
+      <Setter Property="TextAlignment" Value="Center" />
+    </Style>
+
+    <!-- A name that goes somewhere is amber and clickable; a name the wiki gave
+         no page for is plain text on the same baseline, so a list reads as one
+         list rather than two. -->
+    <Style Selector="Button.link">
+      <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeRow}" />
+      <Setter Property="Foreground" Value="{StaticResource BrushSignalAmber}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+
+    <Style Selector="Button.link /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <Style Selector="Button.link:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="TextBlock.TextDecorations" Value="Underline" />
+    </Style>
+
+    <Style Selector="Button.ghost">
+      <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeMicro}" />
+      <Setter Property="Foreground" Value="{StaticResource BrushSignalAmber}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="{StaticResource BrushLineHair}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Padding" Value="{StaticResource InsetButton}" />
+      <Setter Property="CornerRadius" Value="{StaticResource RadiusPill}" />
+    </Style>
+
+    <Style Selector="Button.ghost:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource BrushSurfaceRaised}" />
+      <Setter Property="BorderBrush" Value="{StaticResource BrushLineBright}" />
+    </Style>
+
+  </Window.Styles>
+
+  <Window.Resources>
+
+    <!-- Every list of wiki links renders the same way, so they share one
+         template. Tag carries the destination because the click handler cannot
+         reach a compiled binding from the sender. -->
+    <DataTemplate x:Key="LinkRowTemplate" DataType="vm:MobInfoLinkViewModel">
+      <Panel Height="{StaticResource SizeRowHeight}" Margin="{StaticResource GapRow}">
+        <Button Classes="link"
+                IsVisible="{Binding HasUrl}"
+                Content="{Binding Name}"
+                Tag="{Binding Url}"
+                VerticalAlignment="Center"
+                Click="OnLinkClicked" />
+        <TextBlock Classes="rowname"
+                   IsVisible="{Binding !HasUrl}"
+                   Text="{Binding Name}" />
+      </Panel>
+    </DataTemplate>
+
+  </Window.Resources>
+
+  <Grid RowDefinitions="Auto,Auto,*">
+
+    <Border Grid.Row="0"
+            Background="{StaticResource BrushHeaderGround}"
+            BorderBrush="{StaticResource BrushLineHair}"
+            BorderThickness="{StaticResource RuleBottom}"
+            Padding="{StaticResource InsetHeader}">
+      <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*,Auto">
+
+        <Border Grid.Row="0" Grid.Column="0"
+                Width="{StaticResource SizeSpineWidth}"
+                Height="{StaticResource SizeBrandSpineHeight}"
+                Margin="{StaticResource GapSpine}"
+                VerticalAlignment="Center"
+                CornerRadius="{StaticResource RadiusRow}"
+                Background="{StaticResource BrushSignalAmber}" />
+
+        <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Vertical" VerticalAlignment="Center">
+          <TextBlock Classes="eyebrow" Text="MOB INFO" />
+          <TextBlock Classes="mobname"
+                     IsVisible="{Binding HasMob}"
+                     Text="{Binding Name}" />
+          <TextBlock Classes="eyebrow"
+                     IsVisible="{Binding !HasMob}"
+                     Text="NOTHING CONSIDERED" />
+        </StackPanel>
+
+        <Button Grid.Row="0" Grid.Column="2"
+                Classes="ghost"
+                Name="OpenWikiButton"
+                IsVisible="{Binding HasUrl}"
+                VerticalAlignment="Center"
+                Content="WIKI" />
+
+        <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+                   Classes="subtitle"
+                   Margin="{StaticResource GapHeaderMeta}"
+                   IsVisible="{Binding HasSubtitle}"
+                   Text="{Binding SubtitleLine}" />
+
+      </Grid>
+    </Border>
+
+    <Border Grid.Row="1"
+            IsVisible="{Binding HasError}"
+            Background="{StaticResource BrushSurfaceSunk}"
+            BorderBrush="{StaticResource BrushSignalRose}"
+            BorderThickness="{StaticResource RuleBottom}"
+            Padding="{StaticResource InsetList}">
+      <TextBlock Classes="notice" Text="{Binding ErrorResults}" />
+    </Border>
+
+    <Panel Grid.Row="2">
+
+      <ScrollViewer IsVisible="{Binding HasMob}"
+                    HorizontalScrollBarVisibility="Disabled"
+                    VerticalScrollBarVisibility="Auto">
+        <StackPanel Orientation="Vertical"
+                    Margin="{StaticResource InsetList}"
+                    Spacing="12">
+
+          <ItemsControl IsVisible="{Binding HasStats}" ItemsSource="{Binding Stats}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="vm:MobInfoStatViewModel">
+                <StackPanel Orientation="Vertical"
+                            Width="{StaticResource SizeStatColumn}"
+                            Margin="{StaticResource GapHeaderMeta}">
+                  <TextBlock Classes="eyebrow" Text="{Binding Label}" />
+                  <TextBlock Classes="statvalue" Text="{Binding Value}" />
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <StackPanel Orientation="Vertical" IsVisible="{Binding HasSpecials}" Spacing="4">
+            <TextBlock Classes="section" Text="SPECIALS" />
+            <ItemsControl ItemsSource="{Binding Specials}"
+                          ItemTemplate="{StaticResource LinkRowTemplate}" />
+          </StackPanel>
+
+          <StackPanel Orientation="Vertical" IsVisible="{Binding HasKnownLoot}" Spacing="4">
+            <TextBlock Classes="section" Text="KNOWN LOOT" />
+            <ItemsControl ItemsSource="{Binding KnownLoot}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="vm:MobInfoLinkViewModel">
+                  <Grid Height="{StaticResource SizeRowHeight}"
+                        Margin="{StaticResource GapRow}"
+                        ColumnDefinitions="*,Auto">
+                    <Panel Grid.Column="0">
+                      <Button Classes="link"
+                              IsVisible="{Binding HasUrl}"
+                              Content="{Binding Name}"
+                              Tag="{Binding Url}"
+                              VerticalAlignment="Center"
+                              Click="OnLinkClicked" />
+                      <TextBlock Classes="rowname"
+                                 IsVisible="{Binding !HasUrl}"
+                                 Text="{Binding Name}" />
+                    </Panel>
+                    <Panel Grid.Column="1" Width="{StaticResource SizePriceColumn}">
+                      <Button Classes="link"
+                              IsVisible="{Binding HasPriceUrl}"
+                              Content="{Binding Price}"
+                              Tag="{Binding PriceUrl}"
+                              HorizontalAlignment="Right"
+                              VerticalAlignment="Center"
+                              Click="OnLinkClicked" />
+                      <TextBlock Classes="price"
+                                 IsVisible="{Binding !HasPriceUrl}"
+                                 Text="{Binding Price}" />
+                    </Panel>
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+
+          <StackPanel Orientation="Vertical" IsVisible="{Binding HasFactions}" Spacing="4">
+            <TextBlock Classes="section" Text="FACTIONS" />
+            <ItemsControl ItemsSource="{Binding Factions}"
+                          ItemTemplate="{StaticResource LinkRowTemplate}" />
+          </StackPanel>
+
+          <StackPanel Orientation="Vertical" IsVisible="{Binding HasOpposingFactions}" Spacing="4">
+            <TextBlock Classes="section" Text="OPPOSING FACTIONS" />
+            <ItemsControl ItemsSource="{Binding OpposingFactions}"
+                          ItemTemplate="{StaticResource LinkRowTemplate}" />
+          </StackPanel>
+
+          <StackPanel Orientation="Vertical" IsVisible="{Binding HasRelatedQuests}" Spacing="4">
+            <TextBlock Classes="section" Text="RELATED QUESTS" />
+            <ItemsControl ItemsSource="{Binding RelatedQuests}"
+                          ItemTemplate="{StaticResource LinkRowTemplate}" />
+          </StackPanel>
+
+        </StackPanel>
+      </ScrollViewer>
+
+      <StackPanel IsVisible="{Binding IsEmpty}"
+                  Orientation="Vertical"
+                  Spacing="6"
+                  Margin="{StaticResource InsetPanel}"
+                  VerticalAlignment="Center"
+                  HorizontalAlignment="Center">
+        <TextBlock Classes="empty" Text="No mob considered yet" />
+        <TextBlock Classes="eyebrow"
+                   MaxWidth="{StaticResource SizeEmptyProseWidth}"
+                   TextAlignment="Center"
+                   TextWrapping="Wrap"
+                   Text="Target something in game and consider it. The wiki page for that mob is looked up and shown here." />
+      </StackPanel>
+
+    </Panel>
+
+  </Grid>
+
+</Window>

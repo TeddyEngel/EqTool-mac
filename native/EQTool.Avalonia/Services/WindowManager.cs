@@ -25,6 +25,8 @@ namespace EQTool.Avalonia.Services
 
         public static void ShowConsole() => Show(() => new ConsoleWindow());
 
+        public static void ShowMobInfo() => Show(() => new MobInfoWindow());
+
         public static void Show<TWindow>(Func<TWindow> create) where TWindow : Window
         {
             if (OpenWindows.TryGetValue(typeof(TWindow), out var existing))

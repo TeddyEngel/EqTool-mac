@@ -145,6 +145,9 @@
                   Name="OpenDpsButton"
                   Content="DPS" />
           <Button Classes="ghost"
+                  Name="OpenMobInfoButton"
+                  Content="Mob" />
+          <Button Classes="ghost"
                   Name="OpenConsoleButton"
                   Content="Console" />
           <Button Classes="ghost"

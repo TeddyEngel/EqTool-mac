@@ -139,5 +139,13 @@
        a fixed row height. 14 on 11pt Menlo is the tightest that keeps a
        wrapped continuation readable as part of the same entry. -->
   <x:Double x:Key="SizeConsoleLineHeight">14</x:Double>
+  <!-- Mob stats are a label over a value. The column is wide enough for
+       "ATTACKS / ROUND" at TypeMicro, which is the longest label the wiki
+       template supplies, so the grid stays on two columns at the window's
+       minimum width. -->
+  <x:Double x:Key="SizeStatColumn">140</x:Double>
+  <!-- Loot prices are right-aligned in their own column. The widest figure the
+       pricing API returns runs to six digits. -->
+  <x:Double x:Key="SizePriceColumn">64</x:Double>
 
 </ResourceDictionary>

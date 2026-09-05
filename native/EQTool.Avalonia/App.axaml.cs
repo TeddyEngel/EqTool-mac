@@ -48,6 +48,7 @@ namespace EQTool.Avalonia
             menu.Add(MenuItem("Timers", WindowManager.ShowTimers));
             menu.Add(MenuItem("Map", WindowManager.ShowMap));
             menu.Add(MenuItem("DPS Meter", WindowManager.ShowDps));
+            menu.Add(MenuItem("Mob Info", WindowManager.ShowMobInfo));
             menu.Add(MenuItem("Console", WindowManager.ShowConsole));
             menu.Add(new NativeMenuItemSeparator());
             menu.Add(MenuItem("Discord", () => WindowManager.OpenUrl(DiscordUrl)));
