@@ -1912,3 +1912,35 @@ instead. `SettingsWindowViewModel.GroupLeaderName` is written by
 `GroupLeaderHandler` and read by nothing here, so the group leader is tracked and
 never displayed, which is a missing readout rather than wrong behaviour. The
 interfaces and enums carry no behaviour.
+
+### The missing binary caches cost almost nothing
+
+The previous note left this as a decision about which serialisation format to
+pick. That was the wrong framing twice over. The cache format is internal, so it
+is not a decision for anyone outside the code, and more importantly nobody had
+measured what the cache was worth.
+
+Measured on this machine, parsing from source with no cache at all:
+
+```
+spells      191 ms once at startup, for 4780 spells
+fearplane    47 ms   1113 lines,  23 labels
+kaesora      16 ms   1630 lines,  23 labels
+sebilis      13 ms   2679 lines,  46 labels
+kaladimb      4 ms   1351 lines,  30 labels
+eastwastes   20 ms   1919 lines,  44 labels
+```
+
+The first map includes warm-up; the rest sit between 4 and 20 ms. So the cache
+was saving about a fifth of a second at launch and a few milliseconds per zone
+change.
+
+That is not worth reintroducing. Writing it back means choosing a format,
+serialising two model graphs, and then owning cache invalidation, which is a
+category of bug that pays for itself only when the thing being cached is slow.
+This one is not, so `BinarySerializer` stays as a stub that throws into the
+existing catch blocks, and the parse path that already runs stays the only path.
+
+Worth keeping the numbers rather than the conclusion alone. If the map format
+grows or spell parsing gets heavier, the trade changes, and the next person
+should re-measure rather than trust this paragraph.
