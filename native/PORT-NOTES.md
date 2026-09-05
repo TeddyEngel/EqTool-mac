@@ -2042,3 +2042,42 @@ where an escaping exception stops parsing.
 The tests launch a child that writes past the buffer and touch a sentinel file
 afterwards, so completion is observable from outside the launcher. The waits are
 bounded, so a regression fails the test rather than hanging the suite.
+
+### What the client has actually been tested against
+
+Worth writing down plainly, because every "verified" in this file should be read
+against it.
+
+The configured EverQuest directory is a Wine-shaped prefix, and the settings
+point at it:
+
+```
+DefaultEqDirectory = ~/.wine-pigparse/drive_c/EQ
+EqLogDirectory     = ~/.wine-pigparse/drive_c/EQ/Logs
+```
+
+Both exist. What they contain is `eqclient.ini` carrying `Log=TRUE`,
+`license.txt`, `spells_us.txt`, and a `Logs` folder holding one file:
+`eqlog_Sisytest_P1999Green.txt`.
+
+There is no `eqgame.exe`. This is a scaffold holding the minimum set of files the
+client needs to run, and the log in it is named after a test character invented
+for this work. Every feature described as working in this file works against
+that.
+
+Two things follow.
+
+The Wine assumption behind the install guide, the path normaliser and the
+`#if MACOS` updater guard is correct. The paths the client reads are Wine-shaped
+and it is pointed at them deliberately.
+
+`IsEqGameFocused` is blocked, but not for the reason first recorded. The original
+note said the frontmost window could not be detected without an install. That was
+wrong: `NSWorkspace.frontmostApplication` answers with a process id, a localised
+name and a bundle identifier, and was never tried before being called impossible.
+It is blocked because no EverQuest process exists here to be frontmost, so no
+detection rule can be checked against the thing it is meant to match.
+
+A native `EverQuest.app` does run on this machine, from a separate project
+outside this repository. It is not what the client reads from and it does not
+match upstream's rule, which compares the process name against `eqgame`.
