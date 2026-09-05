@@ -2120,3 +2120,35 @@ file named after a test character.
 
 The honest form of the caveat is therefore narrower than the one used so far:
 the parsing is borrowed and tested, the integration and the macOS layer are not.
+
+### Reading the log twice
+
+The previous note split the work into a parsing layer covered by upstream's 375
+tests and an integration layer covered by nothing. The most important thing in
+that second layer is the one the whole client sits on: a line arrives in the log
+file and reaches a handler.
+
+`FileReader` keeps the offset it stopped at, so what it returns is what is new
+since the last call. Upstream's `FileReaderTests` reads once. Reading once is the
+only thing the running client never does; it polls every 100ms and reads again.
+
+If that offset stopped advancing, each poll would hand back the same lines and
+every trigger in them would fire ten times a second. That failure presents as the
+parser being wrong, or a trigger being badly written, rather than as the reader
+losing its place, so it is worth a test that pins the behaviour directly.
+
+Five cover it: a second read after an append returns only the appended line, an
+unchanged file returns nothing, five successive appends each return exactly one
+line, a rotated file that shrinks underneath the reader is still followed, and
+switching to another character's log follows the new file.
+
+`GetLogFileLocation` was checked at the same time and is sound on macOS. Its path
+separator defaults to a backslash and only becomes a forward slash when
+`EqBaseLocation` contains one, which looked like a problem here. It is not: the
+separator is only used on the fallback branch, that branch is guarded by
+`EqBaseLocation` being non-empty, and any non-empty path on this platform
+contains a forward slash. When the log directory is set and holds the file, the
+function returns before the separator is read at all.
+
+These run against a temporary directory, not the configured Wine prefix, so no
+real log is touched.
