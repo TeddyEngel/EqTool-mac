@@ -1,9 +1,11 @@
 using Avalonia.Headless;
+using EQTool.Avalonia.Controls;
 using EQTool.Avalonia.Services;
 using EQTool.Avalonia.ViewModels;
 using EQTool.Avalonia.Views;
 using EQTool.Models;
 using EQTool.Services;
+using EQTool.Services.Map;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
 using System.Linq;
@@ -149,6 +151,35 @@ namespace EQTool.Avalonia.Tests
                 // Put it back so the other tests see the design values.
                 viewModel.FontSize = 12;
                 Assert.AreEqual(12.0, (double)global::Avalonia.Application.Current.Resources["TypeBody"], 0.001);
+            });
+        }
+
+        [TestMethod]
+        public void FontSize_Changed_AlsoRescalesSizesThatAreDrawnNotBound()
+        {
+            OnUiThread(() =>
+            {
+                // Arrange
+                // The map draws its labels to a canvas, so it cannot pick the
+                // size up from a DynamicResource like the other views.
+                var settings = new EQToolSettings { Triggers = new List<Trigger>() };
+                var viewModel = BuildSettingsViewModel(settings);
+
+                // Act
+                viewModel.FontSize = 24;
+
+                // Assert
+                // Asserting the control rather than TypeScale: the service can be
+                // correct while nothing calls it, which is what the first version
+                // of this test missed.
+                Assert.AreEqual(2.0, TypeScale.CurrentFactor(), 0.001);
+                Assert.AreEqual(28.0, ZoneMapControl.LabelFontSize(LabelSize.Large), 0.001);
+                Assert.AreEqual(18.0, ZoneMapControl.LabelFontSize(LabelSize.Small), 0.001);
+
+                // Put it back so later tests see the design values.
+                viewModel.FontSize = 12;
+                Assert.AreEqual(1.0, TypeScale.CurrentFactor(), 0.001);
+                Assert.AreEqual(14.0, ZoneMapControl.LabelFontSize(LabelSize.Large), 0.001);
             });
         }
 

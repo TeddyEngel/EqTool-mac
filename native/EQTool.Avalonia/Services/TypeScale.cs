@@ -51,6 +51,31 @@ namespace EQTool.Avalonia.Services
             return result;
         }
 
+        // How far the tokens currently sit from the design file. Read back from
+        // the resources rather than from settings so anything drawing outside the
+        // resource system stays in step with whatever was last applied, without
+        // needing its own subscription.
+        public static double CurrentFactor()
+        {
+            var application = Application.Current;
+            if (application != null
+                && application.Resources.TryGetValue("TypeBody", out var stored)
+                && stored is double body
+                && body > 0)
+            {
+                return body / Defaults["TypeBody"];
+            }
+
+            return 1.0;
+        }
+
+        // For sizes that are drawn rather than bound, such as the map's labels.
+        public static double ScaleToCurrent(double size)
+        {
+            var scaled = size * CurrentFactor();
+            return Math.Round(scaled * 2, MidpointRounding.AwayFromZero) / 2;
+        }
+
         // Writes into the application's resources, which is where
         // DesignTokens.axaml is merged. Consumers have to ask for these with
         // DynamicResource; a StaticResource is resolved once when the view loads

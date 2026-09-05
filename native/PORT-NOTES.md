@@ -1741,3 +1741,26 @@ One part is not covered. `ZoneMapControl` draws its labels with sizes of 14, 11
 and 9 written into `LabelFontSize`, rather than from the tokens, so map labels do
 not follow this setting. The map draws to a canvas rather than composing
 controls, so it needs its own handling.
+
+### Map labels follow the font size too
+
+The note above says they do not. That was true when it was written and is not
+any more.
+
+`ZoneMapControl` draws to a canvas, so it cannot pick a size up from a
+`DynamicResource` the way the other views do. It calls `TypeScale.ScaleToCurrent`
+instead, which reads the factor back out of the application resources rather than
+out of settings. Reading it from the resources means anything drawn rather than
+bound stays in step with whatever was last applied, without needing to know the
+setting exists or subscribe to it.
+
+Worth recording how close this came to shipping unguarded. The first test for it
+asserted `TypeScale.ScaleToCurrent(14)` was 28, which is a fact about the service
+and says nothing about whether the control calls it. Removing the call from
+`LabelFontSize` left every test green. The test now calls
+`ZoneMapControl.LabelFontSize` directly, which needed the method to be `internal`
+rather than `private`, and the same mutation now fails it.
+
+That is the third test this session that passed while proving nothing, and all
+three were found the same way, by breaking the code on purpose and checking the
+suite noticed. Writing the test is not the same as knowing it works.

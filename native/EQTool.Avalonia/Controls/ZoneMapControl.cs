@@ -171,14 +171,19 @@ namespace EQTool.Avalonia.Controls
             return ((uint)colour.R << 16) | ((uint)colour.G << 8) | colour.B;
         }
 
-        private static double LabelFontSize(LabelSize size)
+        internal static double LabelFontSize(LabelSize size)
         {
+            double baseSize;
             switch (size)
             {
-                case LabelSize.Large: return 14.0;
-                case LabelSize.Medium: return 11.0;
-                default: return 9.0;
+                case LabelSize.Large: baseSize = 14.0; break;
+                case LabelSize.Medium: baseSize = 11.0; break;
+                default: baseSize = 9.0; break;
             }
+
+            // Drawn to the canvas rather than bound, so it cannot pick the font
+            // size up from a DynamicResource the way the other views do.
+            return EQTool.Avalonia.Services.TypeScale.ScaleToCurrent(baseSize);
         }
 
         public override void Render(DrawingContext context)
