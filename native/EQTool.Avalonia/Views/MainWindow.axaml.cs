@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
@@ -18,24 +19,26 @@ namespace EQTool.Avalonia.Views
             DataContext = viewModel;
 
             this.FindControl<Button>("ChooseLogFolderButton").Click += OnChooseLogFolderClicked;
-            this.FindControl<Button>("OpenMapButton").Click += OnOpenMapClicked;
+            this.FindControl<Button>("OpenMapButton").Click += (_, _) => ShowSingleInstance(() => new MapWindow());
+            this.FindControl<Button>("OpenDpsButton").Click += (_, _) => ShowSingleInstance(() => new DpsWindow());
         }
 
-        // Windows other than the main one are kept as single instances: each holds
-        // log event subscriptions, so opening a second would double every update.
-        private MapWindow mapWindow;
+        private readonly Dictionary<Type, Window> openWindows = new Dictionary<Type, Window>();
 
-        private void OnOpenMapClicked(object sender, RoutedEventArgs e)
+        // Each secondary window subscribes to log events and owns a timer, so a
+        // second instance would double every update rather than just look untidy.
+        private void ShowSingleInstance<TWindow>(Func<TWindow> create) where TWindow : Window
         {
-            if (mapWindow == null)
+            if (openWindows.TryGetValue(typeof(TWindow), out var existing))
             {
-                mapWindow = new MapWindow();
-                mapWindow.Closed += (_, _) => mapWindow = null;
-                mapWindow.Show();
+                existing.Activate();
                 return;
             }
 
-            mapWindow.Activate();
+            var window = create();
+            openWindows[typeof(TWindow)] = window;
+            window.Closed += (_, _) => openWindows.Remove(typeof(TWindow));
+            window.Show();
         }
 
         protected override void OnClosed(EventArgs e)

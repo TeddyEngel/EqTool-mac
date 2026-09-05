@@ -142,6 +142,9 @@
                   Name="OpenMapButton"
                   Content="Map" />
           <Button Classes="ghost"
+                  Name="OpenDpsButton"
+                  Content="DPS" />
+          <Button Classes="ghost"
                   Name="ChooseLogFolderButton"
                   Content="Log folder…" />
         </StackPanel>

@@ -1,0 +1,155 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:EQTool.Avalonia.ViewModels"
+        x:Class="EQTool.Avalonia.Views.DpsWindow"
+        x:DataType="vm:DpsWindowViewModel"
+        Title="PigParse DPS"
+        Width="420"
+        Height="600"
+        MinWidth="320"
+        MinHeight="240"
+        Background="{StaticResource BrushWindowGround}">
+
+  <Window.Styles>
+
+    <Style Selector="TextBlock.eyebrow">
+      <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeMicro}" />
+      <Setter Property="LetterSpacing" Value="2" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextFaint}" />
+    </Style>
+
+    <Style Selector="TextBlock.brand">
+      <Setter Property="FontFamily" Value="{StaticResource FontDisplay}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeHeading}" />
+      <Setter Property="FontWeight" Value="DemiBold" />
+      <Setter Property="LetterSpacing" Value="2" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}" />
+    </Style>
+
+    <Style Selector="TextBlock.target">
+      <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeCaption}" />
+      <Setter Property="FontWeight" Value="DemiBold" />
+      <Setter Property="Foreground" Value="{StaticResource BrushSignalAmber}" />
+      <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <Style Selector="TextBlock.targetmeta">
+      <Setter Property="FontFamily" Value="{StaticResource FontMono}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeMicro}" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextFaint}" />
+    </Style>
+
+    <Style Selector="TextBlock.source">
+      <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeRow}" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}" />
+      <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="TextBlock.detail">
+      <Setter Property="FontFamily" Value="{StaticResource FontMono}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeMicro}" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextFaint}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="TextBlock.amount">
+      <Setter Property="FontFamily" Value="{StaticResource FontMono}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeCountdown}" />
+      <Setter Property="FontWeight" Value="DemiBold" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}" />
+      <Setter Property="HorizontalAlignment" Value="Right" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="TextBlock.empty">
+      <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeBody}" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextSecondary}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="TextAlignment" Value="Center" />
+    </Style>
+
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,*">
+
+    <Border Grid.Row="0"
+            Background="{StaticResource BrushHeaderGround}"
+            BorderBrush="{StaticResource BrushLineHair}"
+            BorderThickness="{StaticResource RuleBottom}"
+            Padding="{StaticResource InsetHeader}">
+      <StackPanel Orientation="Vertical" Spacing="2">
+        <TextBlock Classes="brand" Text="DAMAGE" />
+        <TextBlock Classes="eyebrow" Text="{Binding CharacterLine}" />
+      </StackPanel>
+    </Border>
+
+    <Panel Grid.Row="1">
+
+      <ScrollViewer IsVisible="{Binding HasGroups}"
+                    Padding="{StaticResource InsetList}">
+        <ItemsControl ItemsSource="{Binding Groups}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate DataType="vm:DpsTargetGroupViewModel">
+              <StackPanel Orientation="Vertical" Margin="0,0,0,10">
+
+                <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,3">
+                  <TextBlock Grid.Column="0" Classes="target" Text="{Binding TargetName}" />
+                  <TextBlock Grid.Column="1" Classes="targetmeta" Text="{Binding TotalDamageText}" />
+                </Grid>
+
+                <ItemsControl ItemsSource="{Binding Rows}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="vm:DpsRowViewModel">
+                      <Border Height="{StaticResource SizeRowHeight}"
+                              Margin="{StaticResource GapRow}"
+                              CornerRadius="{StaticResource RadiusRow}"
+                              Background="{StaticResource BrushSurfaceRow}"
+                              ClipToBounds="True">
+                        <Panel>
+                          <ProgressBar Value="{Binding ShareOfTarget}"
+                                       Maximum="100"
+                                       MinHeight="0"
+                                       VerticalAlignment="Stretch"
+                                       HorizontalAlignment="Stretch"
+                                       Background="Transparent"
+                                       Foreground="{StaticResource BrushSurfaceRaised}" />
+
+                          <Grid ColumnDefinitions="*,Auto,Auto" Margin="{StaticResource InsetRow}">
+                            <TextBlock Grid.Column="0" Classes="source" Text="{Binding SourceName}" />
+                            <TextBlock Grid.Column="1" Classes="detail" Text="{Binding DetailText}" Margin="0,0,8,0" />
+                            <TextBlock Grid.Column="2" Classes="amount" Text="{Binding TotalDamageText}" />
+                          </Grid>
+                        </Panel>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+
+      <StackPanel IsVisible="{Binding IsEmpty}"
+                  Orientation="Vertical"
+                  Spacing="6"
+                  Margin="28"
+                  VerticalAlignment="Center">
+        <TextBlock Classes="empty" Text="No damage yet" />
+        <TextBlock Classes="eyebrow"
+                   TextAlignment="Center"
+                   TextWrapping="Wrap"
+                   Text="Rows appear per target as combat is parsed from your log." />
+      </StackPanel>
+
+    </Panel>
+
+  </Grid>
+
+</Window>
