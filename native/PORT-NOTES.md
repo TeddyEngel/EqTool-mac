@@ -2152,3 +2152,35 @@ function returns before the separator is read at all.
 
 These run against a temporary directory, not the configured Wine prefix, so no
 real log is touched.
+
+### Which of those five actually catch a stalled offset
+
+Worth recording, because the answer is one of them and that was not the
+expectation.
+
+Removing `LastLogReadOffset = stream.Position` from inside the read loop is the
+stalled-offset failure in its purest form. Run against it, four of the five tests
+still pass. Only `ReadNext_AcrossManyPolls_NeverRepeatsALine` fails.
+
+The reason is structural rather than accidental. On the first read of a path the
+offset is set to the file's length *before* the loop runs:
+
+```
+if (!LastLogReadOffset.HasValue || ...)
+{
+    newPlayerEventEmitted = true;
+    LastLogReadOffset = fileinfo.Length;
+}
+```
+
+So after one read the offset is already correct, whether or not the loop
+maintains it. A test that appends once and reads once cannot tell the difference.
+The staleness only compounds on the third read and later, which is why polling
+repeatedly is the only shape that exposes it, and why the client, polling ten
+times a second, would have shown it immediately.
+
+The other four are not thereby useless. Returning only the new line, returning
+nothing from an unchanged file, following a rotated file and following a
+character switch are each worth pinning and would catch other regressions. They
+are simply blind to this one, and a mutation run is the only way that becomes
+visible.
