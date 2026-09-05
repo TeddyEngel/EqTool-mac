@@ -74,6 +74,7 @@ namespace EQTool.Avalonia.Services
                 .As<EQTool.Services.IO.IFileReader>()
                 .SingleInstance();
 
+            _ = builder.RegisterType<LogArchiveService>().AsSelf().SingleInstance();
             _ = builder.RegisterType<Pets>().AsSelf().SingleInstance();
             _ = builder.RegisterType<TriggerTimerManager>().AsSelf().SingleInstance();
             _ = builder.RegisterType<LogParser>().AsSelf().SingleInstance();

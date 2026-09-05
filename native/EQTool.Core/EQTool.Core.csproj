@@ -100,6 +100,7 @@
     <Compile Include="..\..\EQTool\Services\Map\ZoneSpawnTimes.cs"  LinkBase="Linked\EQTool\Services\Map" />
     <Compile Include="..\..\EQTool\Services\EQToolSettingsLoad.cs" LinkBase="Linked\EQTool\Services" />
     <Compile Include="..\..\EQTool\Services\FindEq.cs"             LinkBase="Linked\EQTool\Services" />
+    <Compile Include="..\..\EQTool\Services\LogArchiveService.cs"  LinkBase="Linked\EQTool\Services" />
     <Compile Include="..\..\EQTool\Services\BoatScheduleService.cs" LinkBase="Linked\EQTool\Services" />
     <Compile Include="..\..\EQTool\Services\PigParseApi.cs"        LinkBase="Linked\EQTool\Services" />
     <Compile Include="..\..\EQTool\Services\AudioService.cs"       LinkBase="Linked\EQTool\Services" />

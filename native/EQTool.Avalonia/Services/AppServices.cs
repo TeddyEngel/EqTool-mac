@@ -51,6 +51,11 @@ namespace EQTool.Avalonia.Services
             // rather than whenever a window happens to open.
             _ = container.Resolve<LogParser>();
 
+            // Same again: the hourly check runs from this constructor. It is safe
+            // to build unconditionally because the work is gated on
+            // LogArchiveEnabled, which is off unless the user turns it on.
+            _ = container.Resolve<LogArchiveService>();
+
             return current;
         }
 

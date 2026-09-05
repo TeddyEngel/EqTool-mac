@@ -1613,3 +1613,51 @@ value true and then assert it was false after setting it back. Attaching had
 already applied the stored value, so the window was false to begin with and the
 assertion held whether or not anything was re-applied. Asserting the direction
 that has to change fixes it, and all three now fail without the fix.
+
+### Sweeping the settings window for controls that do nothing
+
+Three separate faults of the same kind had turned up one at a time, so the
+remaining ones were worth finding on purpose rather than by accident. The check
+is mechanical: take every setting the settings view model writes, and look for
+anything that reads it back.
+
+The first pass was wrong and said five settings had no reader. It only searched
+`native/`, and most of the code that consumes settings is upstream source linked
+into the core, which physically lives under `EQTool/`. Searching there as well
+accounts for `YouOnlySpells`, `ShowRandomRolls` and `ShowScoutRollTime`, all read
+by `SpellWindowViewModel`.
+
+An earlier note in this file claimed `SpellWindowViewModel` was replaced by a
+shim in `Compat`. That is wrong. `Compat` holds only `EqToolStubs.cs`,
+`Point3D.cs` and `WindowsShims.cs`; the view model is upstream's, it is compiled
+in, and `NativeContainer` registers it as a singleton.
+
+Two settings were genuinely dead.
+
+`LogArchiveEnabled` had a checkbox and no service behind it.
+`LogArchiveService` was never linked into the core, so ticking the box wrote a
+value nothing read, on any code path. The service turned out to be portable as
+written, needing only `System`, `System.IO`, `System.Timers` and
+`EQTool.Models`, so it links without shims. It is registered and resolved in
+`AppServices.Initialize` alongside the other constructors that start timers.
+
+Building it unconditionally is safe because the work is gated on the setting,
+which is a plain auto-property with no initialiser and so defaults to off. That
+gate matters more than usual here: the service moves log files, and the tests
+run against a temporary directory for the same reason. Breaking the gate turns
+`TryArchiveLogs_WhenDisabled_LeavesFilesAlone` red, which is the check worth
+having.
+
+`LogArchiveSizeMB` is worth noting while this is fresh. It defaults to 100 and
+has no control in the native settings window, so archiving can be switched on but
+its threshold cannot be changed from here.
+
+`FontSize` is the other dead one, and it is still dead. It is written by the
+settings window and read by `App.xaml.cs`, `EventOverlay.xaml.cs` and
+`MapViewModel.cs`, none of which are compiled into this build. Wiring it is not
+mechanical: the windows take their sizes from the type scale in
+`Theme/DesignTokens.axaml` rather than from an inherited window font size, so
+setting `Window.FontSize` would change the few controls that do not name a token
+and leave the rest alone. A control that changes some of the text is worse than
+one that changes none, and choosing how a user font size should fold into a type
+scale is a design decision rather than a repair.
