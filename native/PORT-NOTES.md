@@ -1143,3 +1143,58 @@ Both are reachable that way: the EverQuest install sits behind Wine, and a
 So this failure is a precondition on that feature, not a dismissible one. If UI
 file sync is ever enabled, route those two calls through `MacPathNormalizer`
 first and make `ParsesFullPath` pass.
+
+### Correction: location sharing was live in the native client
+
+An earlier note in this file described the four remaining integrations as "not
+ported", location sharing among them. That was wrong, and the reasoning behind
+it was wrong twice over.
+
+The first mistake was checking whether a file was linked by searching the core
+project for its name. Most of the upstream tree arrives through directory-wide
+includes such as `EQTool\Services\Handlers\**\*.cs`, so individual file names do
+not appear and the search returns nothing for files that are very much compiled
+in. Every handler is present.
+
+The second was assuming nothing constructed `PigParseApi` because nothing
+mentioned it. `NativeContainer` registers `AnyConcreteTypeNotAlreadyRegistered`,
+so Autofac builds whatever a resolved type asks for, and `RegisterCoreTypes`
+registers every `BaseHandler` by scanning the assembly. `LogParser` then takes
+an `IEnumerable<BaseHandler>` with the upstream comment
+`//,_ this forces the creation of all handlers`.
+
+The chain is short and entirely automatic:
+
+```
+LogParser -> SlainHandler -> PlayerTrackerService -> PigParseApi
+```
+
+`PlayerTrackerService` sets `UITimer.Enabled = true` in its own constructor on a
+twenty second period. The elapsed handler returns early only if
+`activePlayer.Player?.Server` is null; otherwise it calls `SendPlayerData`
+against `/api/player/upsertplayers`. Nothing consults the `Sharing` setting,
+which travels inside the payload rather than gating the send. The `App.httpclient`
+in the compatibility shim was a plain `HttpClient`, so the requests were real.
+
+So the native client uploaded character data once a character had been
+identified from the log file. Twenty three separate handler chains reach
+`PigParseApi`; `SpellWindowViewModel` and `TriggerTimerManager`, both registered
+explicitly and resolved at startup, reach it too.
+
+The fix is `EQTool.Core/Platform/PigParseNetworkGuard.cs`, a `DelegatingHandler`
+on that client. Removing the types is not possible without editing upstream, and
+the handlers around them are needed for spell and combat parsing. Blocking by
+host does not work either, because the mob info wiki lookup lives on the same
+host. So the guard allows `/api/item/wiki` and refuses every other path on
+`pigparse.azurewebsites.net`, which also means a new upstream endpoint is denied
+by default rather than admitted.
+
+`NoNetworkReachabilityTests` covers both halves: that the reachability is still
+real, so the guard stays load-bearing, and that the guard refuses the seven known
+endpoints while letting the wiki through. One test reads the handler back off
+`App.httpclient` by reflection, because a guard that works but is not installed
+would pass everything else.
+
+This is worth weighing when the sharing question is answered. The upstream
+feature cannot simply be switched on: it needs a real gate on the send, not the
+flag-inside-the-payload arrangement it ships with.

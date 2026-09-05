@@ -23,7 +23,10 @@ namespace EQTool
         public static string Version => "0.0-mac-core";
         public static string VersionType => "Mac";
 
-        public static readonly HttpClient httpclient = new HttpClient();
+        // Must not become a bare HttpClient: PlayerTrackerService is reachable
+        // and posts character data unprompted. See PigParseNetworkGuard.
+        public static readonly HttpClient httpclient =
+            new HttpClient(new EQTool.Core.Platform.PigParseNetworkGuard());
 
         public static void LogUnhandledException(Exception exception, string source, Servers? server)
         {
