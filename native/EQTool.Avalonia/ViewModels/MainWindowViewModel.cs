@@ -55,20 +55,17 @@ namespace EQTool.Avalonia.ViewModels
         private string sourceLine;
         private string noticeLine;
 
-        public MainWindowViewModel()
+        public MainWindowViewModel() : this(AppServices.Initialize())
         {
-            AvaloniaDispatcherTimerHost.Install();
+        }
 
-            bootstrap = SettingsBootstrap.Load();
-            container = NativeContainer.Build(bootstrap);
+        public MainWindowViewModel(AppServices services)
+        {
+            bootstrap = services.Bootstrap;
+            container = services.Container;
 
             spellWindow = container.Resolve<SpellWindowViewModel>();
             activePlayer = container.Resolve<ActivePlayer>();
-
-            // Resolving TriggerTimerManager is what subscribes trigger timers to
-            // the log stream; TriggerHandler takes it by constructor injection,
-            // and handlers are only built when LogParser asks for them.
-            _ = container.Resolve<TriggerTimerManager>();
             logParser = container.Resolve<LogParser>();
 
             ((INotifyCollectionChanged)spellWindow.SpellList).CollectionChanged += OnSpellListChanged;

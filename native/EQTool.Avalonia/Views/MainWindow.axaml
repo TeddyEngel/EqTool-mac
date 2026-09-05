@@ -134,11 +134,17 @@
           <TextBlock Classes="eyebrow" Text="LIVE TIMERS" />
         </StackPanel>
 
-        <Button Grid.Row="0" Grid.Column="2"
-                Classes="ghost"
-                Name="ChooseLogFolderButton"
-                VerticalAlignment="Center"
-                Content="Log folder…" />
+        <StackPanel Grid.Row="0" Grid.Column="2"
+                    Orientation="Horizontal"
+                    Spacing="6"
+                    VerticalAlignment="Center">
+          <Button Classes="ghost"
+                  Name="OpenMapButton"
+                  Content="Map" />
+          <Button Classes="ghost"
+                  Name="ChooseLogFolderButton"
+                  Content="Log folder…" />
+        </StackPanel>
 
         <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
               Margin="{StaticResource GapHeaderMeta}"

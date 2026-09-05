@@ -18,6 +18,24 @@ namespace EQTool.Avalonia.Views
             DataContext = viewModel;
 
             this.FindControl<Button>("ChooseLogFolderButton").Click += OnChooseLogFolderClicked;
+            this.FindControl<Button>("OpenMapButton").Click += OnOpenMapClicked;
+        }
+
+        // Windows other than the main one are kept as single instances: each holds
+        // log event subscriptions, so opening a second would double every update.
+        private MapWindow mapWindow;
+
+        private void OnOpenMapClicked(object sender, RoutedEventArgs e)
+        {
+            if (mapWindow == null)
+            {
+                mapWindow = new MapWindow();
+                mapWindow.Closed += (_, _) => mapWindow = null;
+                mapWindow.Show();
+                return;
+            }
+
+            mapWindow.Activate();
         }
 
         protected override void OnClosed(EventArgs e)
