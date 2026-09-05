@@ -1470,3 +1470,39 @@ Two earlier conclusions in this file were wrong and are withdrawn:
 This closes the click-through question for the native client. It says nothing
 about the Wine path, where `WS_EX_TRANSPARENT` never reaches Cocoa and opaque
 overlay pixels still swallow clicks.
+
+### What the click-through result does and does not cover
+
+The verification above used two plain windows created by the harness, not the
+real `EventOverlayWindow`. That distinction is worth keeping straight.
+
+What it establishes is the mechanism: `setIgnoresMouseEvents:`, driven through
+the production `MacOSWindowInterop`, causes a real posted click to land on the
+window underneath, and reverses. Both harness windows were opaque, which is the
+harder case and the one that matters, since the Wine limitation is precisely
+that opaque overlay pixels swallow clicks.
+
+An attempt to repeat it against a real `EventOverlayWindow` instance did not
+produce a usable result. The window builds and behaves as expected outside the
+click itself: `Background` is `Transparent`, `DragHandle` reports
+`IsHitTestVisible=True`, and `ignoresMouseEvents` read back false, true, false
+in step with the calls. But no window received the posted click in any of the
+three trials, including the control where the overlay's own drag handle should
+have caught it. Since the control failed, nothing can be concluded from the
+other two rows, and the run is recorded as inconclusive rather than as a pass.
+
+The likely cause is the click coordinates rather than the overlay. They were
+computed with `PointToScreen` on the drag handle, which reported a point twelve
+pixels from the window origin, and if the window was not yet placed where the
+call assumed then the clicks went somewhere else entirely. Worth checking
+against the window's `NSWindow` frame instead, which is what fixed the same
+class of mistake earlier.
+
+Two other things that cost time here, both worth knowing before repeating this.
+A bare `Application` subclass cannot construct the overlay, because the XAML
+wants `FontDisplay` from `Theme/DesignTokens.axaml`; adding `FluentTheme` and
+that dictionary is enough, and is preferable to configuring the real `App`,
+whose startup builds a `MainWindow` and reads the live settings file. And the
+classic desktop lifetime shuts the process down before any window is created
+unless `ShutdownMode` is set to `OnExplicitShutdown`, which presents as the
+program exiting silently with status zero.
