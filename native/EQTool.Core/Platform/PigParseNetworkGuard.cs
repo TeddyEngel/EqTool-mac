@@ -57,8 +57,14 @@ namespace EQTool.Core.Platform
             if (!string.Equals(requestUri.Host, PigParseHost, StringComparison.OrdinalIgnoreCase))
                 return true;
 
+            // Compared whole rather than by prefix. A prefix would also admit a
+            // future /api/item/wikiupload, and it would admit
+            // /api/item/wiki%2F..%2Fplayer/upsertplayers, because AbsolutePath
+            // leaves %2F encoded and so the string still begins with the allowed
+            // path. An unencoded ../ is harmless by comparison, since Uri
+            // resolves it away before this runs.
             return AllowedPaths.Any(allowed =>
-                requestUri.AbsolutePath.StartsWith(allowed, StringComparison.OrdinalIgnoreCase));
+                string.Equals(requestUri.AbsolutePath, allowed, StringComparison.OrdinalIgnoreCase));
         }
 
         protected override Task<HttpResponseMessage> SendAsync(

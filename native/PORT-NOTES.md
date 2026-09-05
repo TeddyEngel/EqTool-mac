@@ -1270,3 +1270,19 @@ that it costs a working feature for a request that cannot identify anyone.
 That was decided one way here without asking, which is the wrong way round for a
 trade of this kind. Adding the path to `AllowedPaths` in `PigParseNetworkGuard`
 restores prices and changes nothing else.
+
+### The allow list matches whole paths, not prefixes
+
+The guard first compared paths with `StartsWith`, which was wrong in two ways.
+
+A prefix admits anything that merely begins with the allowed path, so a future
+`/api/item/wikiupload` would have been allowed without anyone noticing. It also
+admits `/api/item/wiki%2F..%2Fplayer/upsertplayers`, because `AbsolutePath`
+leaves `%2F` encoded: the string still starts with `/api/item/wiki`, and what
+arrives at the service still carries `../player/upsertplayers`. The unencoded
+form is the harmless one, since `Uri` resolves `../` before the guard sees it
+and the result no longer matches.
+
+Comparing the whole path closes both, and costs nothing: `WikiApi` posts to
+exactly `/api/item/wiki` with no query string. Five refusal cases and the real
+call are covered by tests.

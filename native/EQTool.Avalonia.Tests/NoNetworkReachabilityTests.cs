@@ -193,6 +193,37 @@ namespace EQTool.Avalonia.Tests
         }
 
         [TestMethod]
+        [DataRow("https://pigparse.azurewebsites.net/api/item/wikiupload")]
+        [DataRow("https://pigparse.azurewebsites.net/api/item/wiki2")]
+        [DataRow("https://pigparse.azurewebsites.net/api/item/wiki/../player/upsertplayers")]
+        [DataRow("https://pigparse.azurewebsites.net/api/item/wiki%2F..%2Fplayer/upsertplayers")]
+        [DataRow("https://pigparse.azurewebsites.net/api/item/wiki/sub")]
+        public void Guard_RefusesPathsThatMerelyBeginWithAnAllowedOne(string url)
+        {
+            // Act
+            var (response, innerCalls) = Send(url);
+
+            // Assert
+            // The allowed path is matched whole. Matching by prefix would admit
+            // every one of these, and the encoded one would arrive at the
+            // service still carrying ../player/upsertplayers.
+            Assert.AreEqual(HttpStatusCode.Forbidden, response.StatusCode);
+            Assert.AreEqual(0, innerCalls);
+        }
+
+        [TestMethod]
+        public void Guard_StillAllowsTheWikiCallTheCodeActuallyMakes()
+        {
+            // Arrange
+            // WikiApi posts to this exact path with no query string, so matching
+            // the whole path does not cost the feature.
+            var actual = new Uri("https://pigparse.azurewebsites.net/api/item/wiki");
+
+            // Assert
+            Assert.IsTrue(PigParseNetworkGuard.IsAllowed(actual));
+        }
+
+        [TestMethod]
         public void Guard_LeavesOtherHostsAlone()
         {
             // Act
