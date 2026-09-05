@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using System;
+using System.Runtime.Versioning;
 
 namespace EQTool.Avalonia.Services
 {
@@ -28,6 +29,21 @@ namespace EQTool.Avalonia.Services
             window.Closed += (_, _) => window.Opened -= Apply;
         }
 
+        [SupportedOSPlatform("macos")]
+        private static void ApplyPlatformWindowLevel(Window window, bool alwaysOnTop, bool asOverlay)
+        {
+            if (asOverlay)
+            {
+                MacOSWindowInterop.SetWindowLevel(window, MacOSWindowInterop.OverlayWindowLevel);
+                MacOSWindowInterop.MakeOverlayBehaviour(window);
+                return;
+            }
+
+            MacOSWindowInterop.SetWindowLevel(
+                window,
+                alwaysOnTop ? MacOSWindowInterop.NSStatusWindowLevel : MacOSWindowInterop.NSNormalWindowLevel);
+        }
+
         public static void ApplyNow(Window window, EQTool.Models.WindowState state, bool asOverlay = false)
         {
             if (window == null || state == null)
@@ -36,33 +52,26 @@ namespace EQTool.Avalonia.Services
             window.Opacity = Math.Clamp(state.Opacity ?? 1.0, 0.1, 1.0);
             window.Topmost = state.AlwaysOnTop;
 
-            if (!MacOSWindowInterop.IsSupported)
+            if (!OperatingSystem.IsMacOS())
                 return;
 
             // Avalonia's Topmost is NSFloatingWindowLevel (3), which sits below a
-            // Wine fullscreen window at 26. An overlay that must cover the game
-            // needs to be raised past that explicitly.
-            if (asOverlay)
-            {
-                MacOSWindowInterop.SetWindowLevel(window, MacOSWindowInterop.OverlayWindowLevel);
-                MacOSWindowInterop.MakeOverlayBehaviour(window);
-            }
-            else if (state.AlwaysOnTop)
-            {
-                MacOSWindowInterop.SetWindowLevel(window, MacOSWindowInterop.NSStatusWindowLevel);
-            }
-            else
-            {
-                MacOSWindowInterop.SetWindowLevel(window, MacOSWindowInterop.NSNormalWindowLevel);
-            }
+            // Wine fullscreen window at 26, so an overlay is raised past it.
+            ApplyPlatformWindowLevel(window, state.AlwaysOnTop, asOverlay);
+        }
+
+        [SupportedOSPlatform("macos")]
+        private static void SetClickThroughCore(Window window, bool clickThrough)
+        {
+            MacOSWindowInterop.SetIgnoresMouseEvents(window, clickThrough);
         }
 
         public static void SetClickThrough(Window window, bool clickThrough)
         {
-            if (!MacOSWindowInterop.IsSupported)
+            if (!OperatingSystem.IsMacOS())
                 return;
 
-            MacOSWindowInterop.SetIgnoresMouseEvents(window, clickThrough);
+            SetClickThroughCore(window, clickThrough);
         }
     }
 }

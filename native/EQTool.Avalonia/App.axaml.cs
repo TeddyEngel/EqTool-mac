@@ -46,6 +46,7 @@ namespace EQTool.Avalonia
         {
             var menu = new NativeMenu();
             menu.Add(MenuItem("Timers", WindowManager.ShowTimers));
+            menu.Add(MenuItem("Overlay", WindowManager.ShowOverlay));
             menu.Add(MenuItem("Map", WindowManager.ShowMap));
             menu.Add(MenuItem("DPS Meter", WindowManager.ShowDps));
             menu.Add(MenuItem("Mob Info", WindowManager.ShowMobInfo));

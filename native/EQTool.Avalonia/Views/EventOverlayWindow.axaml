@@ -1,0 +1,121 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:EQTool.Avalonia.ViewModels"
+        x:Class="EQTool.Avalonia.Views.EventOverlayWindow"
+        x:DataType="vm:EventOverlayViewModel"
+        Title="PigParse Overlay"
+        Width="640"
+        Height="450"
+        SystemDecorations="None"
+        TransparencyLevelHint="Transparent"
+        Background="Transparent"
+        ShowInTaskbar="False"
+        Topmost="True">
+
+  <Window.Styles>
+
+    <Style Selector="TextBlock.banner">
+      <Setter Property="FontFamily" Value="{StaticResource FontDisplay}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeHeading}" />
+      <Setter Property="FontWeight" Value="DemiBold" />
+      <Setter Property="TextAlignment" Value="Center" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+    <Style Selector="TextBlock.chain">
+      <Setter Property="FontFamily" Value="{StaticResource FontMono}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeRow}" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}" />
+    </Style>
+
+    <Style Selector="TextBlock.barname">
+      <Setter Property="FontFamily" Value="{StaticResource FontUI}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeRow}" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <Style Selector="TextBlock.barcount">
+      <Setter Property="FontFamily" Value="{StaticResource FontMono}" />
+      <Setter Property="FontSize" Value="{StaticResource TypeCountdown}" />
+      <Setter Property="FontWeight" Value="DemiBold" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="HorizontalAlignment" Value="Right" />
+    </Style>
+
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,Auto,*">
+
+    <!-- The only interactive part when click-through is off. Everything below is
+         hit-test invisible so clicks reach the game rather than the overlay. -->
+    <Border Grid.Row="0"
+            Name="DragHandle"
+            Width="16"
+            Height="16"
+            Margin="4"
+            HorizontalAlignment="Left"
+            CornerRadius="{StaticResource RadiusRow}"
+            Background="{StaticResource BrushSignalRose}" />
+
+    <ItemsControl Grid.Row="1"
+                  ItemsSource="{Binding ChainLines}"
+                  IsHitTestVisible="False"
+                  Margin="6,0,6,0">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate>
+          <TextBlock Classes="chain" Text="{Binding}" />
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <StackPanel Grid.Row="2"
+                Orientation="Vertical"
+                Spacing="6"
+                Margin="6"
+                IsHitTestVisible="False">
+
+      <ItemsControl ItemsSource="{Binding Banners}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate DataType="vm:OverlayBannerViewModel">
+            <TextBlock Classes="banner"
+                       Text="{Binding Text}"
+                       Foreground="{Binding Foreground}"
+                       Margin="0,0,0,4" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <ItemsControl ItemsSource="{Binding TimerBars}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate DataType="vm:OverlayTimerBarViewModel">
+            <Border Height="{StaticResource SizeRowHeight}"
+                    Margin="{StaticResource GapRow}"
+                    CornerRadius="{StaticResource RadiusRow}"
+                    Background="{StaticResource BrushSurfaceRow}"
+                    ClipToBounds="True">
+              <Panel>
+                <ProgressBar Value="{Binding PercentLeft}"
+                             Maximum="100"
+                             MinHeight="0"
+                             VerticalAlignment="Stretch"
+                             HorizontalAlignment="Stretch"
+                             Background="Transparent"
+                             Foreground="{Binding BarColour}" />
+                <Grid ColumnDefinitions="*,Auto" Margin="{StaticResource InsetRow}">
+                  <TextBlock Grid.Column="0" Classes="barname" Text="{Binding Name}" />
+                  <TextBlock Grid.Column="1" Classes="barcount" Text="{Binding CountdownText}" />
+                </Grid>
+              </Panel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+    </StackPanel>
+
+  </Grid>
+
+</Window>

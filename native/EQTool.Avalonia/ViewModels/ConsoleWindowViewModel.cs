@@ -17,59 +17,12 @@ using WpfSolidColorBrush = System.Windows.Media.SolidColorBrush;
 
 namespace EQTool.Avalonia.ViewModels
 {
-    // Turns the WPF brush upstream hands every console line into one Avalonia can
-    // paint with.
-    //
-    // `ConsoleLine.Brush` is `System.Windows.Media.Brush` from
-    // `EQTool.Core/Compat/WindowsShims.cs`, which is a marker class with no
-    // colour on it at all. The colour lives on the `SolidColorBrush` subclass,
-    // and every value `DebugOutput` passes comes from the shim's `Brushes`
-    // table, so every line in practice arrives as a `SolidColorBrush` carrying
-    // real ARGB bytes. Anything that is not one has no colour to read and falls
-    // back to the theme's text brush rather than to a colour invented here.
-    internal static class ConsoleBrushMap
-    {
-        private const string FallbackTokenKey = "BrushTextPrimary";
-
-        // The shim's `Brushes` members are singletons, so six entries cover
-        // every line DebugOutput can produce.
-        private static readonly Dictionary<WpfBrush, IBrush> Resolved
-            = new Dictionary<WpfBrush, IBrush>();
-
-        public static IBrush Resolve(WpfBrush brush)
-        {
-            if (!(brush is WpfSolidColorBrush solid))
-                return Fallback();
-
-            if (Resolved.TryGetValue(brush, out var existing))
-                return existing;
-
-            var colour = solid.Color;
-            var converted = new ImmutableSolidColorBrush(
-                Color.FromArgb(colour.A, colour.R, colour.G, colour.B));
-            Resolved[brush] = converted;
-            return converted;
-        }
-
-        private static IBrush Fallback()
-        {
-            if (Application.Current != null
-                && Application.Current.TryFindResource(FallbackTokenKey, out var token)
-                && token is IBrush brush)
-            {
-                return brush;
-            }
-
-            return null;
-        }
-    }
-
     public class ConsoleLineViewModel
     {
         public ConsoleLineViewModel(ConsoleLine line)
         {
             Line = line?.Line;
-            Foreground = ConsoleBrushMap.Resolve(line?.Brush);
+            Foreground = ShimBrushMap.Resolve(line?.Brush);
         }
 
         public string Line { get; }
