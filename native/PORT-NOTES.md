@@ -2214,3 +2214,40 @@ the branch that mutates an existing entry, which is where this breaks.
 Four tests: a match adds a row, resolving the manager schedules a tick at all, a
 tick before expiry leaves a running timer alone, and after expiry plus a tick the
 same trigger starts a fresh timer rather than quietly updating a row that is gone.
+
+### No window remembered where it was
+
+`WindowState` has carried a `WindowRect` all along and nothing in this client
+ever read or wrote it. Upstream saves and restores it from
+`EQTool/UI/BaseSaveStateWindow.cs`, a WPF base class every upstream window
+derives from, which uses `GetWindowRect` and is not part of this build. Its
+screen check, `WindowBounds.isPointVisibleOnAScreen`, is built on
+`System.Windows.Forms.Screen` and is equally unavailable.
+
+So every window opened at its default, every launch. The overlay supports
+dragging and forgot where it had been dragged to, which for a window whose whole
+job is to sit in one place over the game is the worst version of this.
+
+`WindowPreferences` now captures position and size when a window closes and
+applies them when it opens. The screen check is Avalonia's `Screens`, and only
+the corner is tested: `Position` is in physical pixels while `Width` and `Height`
+are device independent, so adding them together would be wrong on a scaled
+display. What matters is that the window lands somewhere reachable, which is the
+same thing upstream guards against.
+
+Saving to disk hangs off `WindowPreferences.Persist`, a static the shell installs
+during `AppServices.Initialize` and nothing else sets. That mirrors
+`DispatcherTimer.Host`, which already works this way here, and it means a window
+built in a test records its geometry in memory and writes nothing.
+
+Two things worth recording about the tests rather than the code.
+
+`Restore` was written and never called. It compiled, it read correctly, and it
+was dead until the call was added to `ApplyNow` — the same shape as the faults
+this session has been finding elsewhere, produced fresh.
+
+The first six tests covered the guard and not the thing it guards. There was a
+case for a rect far off every screen not being restored, and no case for a rect
+on a screen being restored, so a `Restore` that never applied anything would have
+passed all six. The headless backend reports one screen at 0,0,1920,1280, which
+is what makes the positive case meaningful: 300,200 is inside it and is applied.

@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using System;
 using System.Runtime.CompilerServices;
@@ -16,18 +17,86 @@ namespace EQTool.Avalonia.Services
     // constructor where the handle would still be null.
     public static class WindowPreferences
     {
-        public static void Attach(Window window, EQTool.Models.WindowState state, bool asOverlay = false)
+        // Installed by the shell at startup and left null everywhere else, so a
+        // window built in a test records its geometry without writing to disk.
+        // Same shape as DispatcherTimer.Host.
+        public static Action Persist { get; set; }
+
+        public static void Attach(
+            Window window,
+            EQTool.Models.WindowState state,
+            bool asOverlay = false)
         {
             if (window == null || state == null)
                 return;
 
             void Apply(object sender, EventArgs e) => ApplyNow(window, state, asOverlay);
+            void Remember(object sender, WindowClosingEventArgs e)
+            {
+                Capture(window, state);
+                Persist?.Invoke();
+            }
 
             if (window.IsLoaded)
                 ApplyNow(window, state, asOverlay);
 
             window.Opened += Apply;
-            window.Closed += (_, _) => window.Opened -= Apply;
+            window.Closing += Remember;
+            window.Closed += (_, _) =>
+            {
+                window.Opened -= Apply;
+                window.Closing -= Remember;
+            };
+        }
+
+        // Upstream saves this from a WPF base class that is not part of this
+        // build, so nothing here remembered a position.
+        public static void Capture(Window window, EQTool.Models.WindowState state)
+        {
+            if (window == null || state == null)
+                return;
+
+            var position = window.Position;
+            state.WindowRect = new System.Windows.Rect(
+                position.X,
+                position.Y,
+                window.Width,
+                window.Height);
+        }
+
+        private static bool IsOnAScreen(Window window, PixelPoint point)
+        {
+            var screens = window.Screens;
+            if (screens == null)
+                return false;
+
+            foreach (var screen in screens.All)
+            {
+                if (screen.Bounds.Contains(point))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static void Restore(Window window, EQTool.Models.WindowState state)
+        {
+            var rect = state.WindowRect;
+            if (!rect.HasValue)
+                return;
+
+            if (rect.Value.Width > 0)
+                window.Width = rect.Value.Width;
+
+            if (rect.Value.Height > 0)
+                window.Height = rect.Value.Height;
+
+            // Corner only: Position is physical pixels and the size is device
+            // independent, so adding them would be wrong on a scaled display. A
+            // window restored onto an unplugged monitor is unreachable.
+            var corner = new PixelPoint((int)rect.Value.X, (int)rect.Value.Y);
+            if (IsOnAScreen(window, corner))
+                window.Position = corner;
         }
 
         [SupportedOSPlatform("macos")]
@@ -52,6 +121,9 @@ namespace EQTool.Avalonia.Services
 
             window.Opacity = Math.Clamp(state.Opacity ?? 1.0, 0.1, 1.0);
             window.Topmost = state.AlwaysOnTop;
+
+            // Before the macOS guard: geometry is not platform specific.
+            Restore(window, state);
 
             if (!OperatingSystem.IsMacOS())
                 return;

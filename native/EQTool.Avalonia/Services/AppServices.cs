@@ -56,6 +56,10 @@ namespace EQTool.Avalonia.Services
             // LogArchiveEnabled, which is off unless the user turns it on.
             _ = container.Resolve<LogArchiveService>();
 
+            // Lets a window write its position back when it closes. Nothing else
+            // installs this, so tests keep their settings in memory.
+            WindowPreferences.Persist = () => bootstrap.Loader.Save(bootstrap.Settings);
+
             return current;
         }
 
