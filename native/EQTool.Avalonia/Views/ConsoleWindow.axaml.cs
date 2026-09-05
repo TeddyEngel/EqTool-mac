@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
+using EQTool.Avalonia.Services;
 using EQTool.Avalonia.ViewModels;
 using System;
 using System.Collections.Specialized;
@@ -28,6 +29,8 @@ namespace EQTool.Avalonia.Views
 
             viewModel = new ConsoleWindowViewModel();
             DataContext = viewModel;
+
+            WindowPreferences.Attach(this, AppServices.Initialize().Bootstrap.Settings.ConsoleWindowState);
 
             scroller = this.FindControl<ScrollViewer>("ConsoleScroller");
             scroller.ScrollChanged += OnScrollChanged;

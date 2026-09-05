@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using EQTool.Avalonia.Controls;
+using EQTool.Avalonia.Services;
 using EQTool.Avalonia.ViewModels;
 using System;
 
@@ -17,6 +18,8 @@ namespace EQTool.Avalonia.Views
 
             viewModel = new MapWindowViewModel();
             DataContext = viewModel;
+
+            WindowPreferences.Attach(this, AppServices.Initialize().Bootstrap.Settings.MapWindowState);
 
             this.FindControl<Button>("ResetViewButton").Click += OnResetViewClicked;
         }

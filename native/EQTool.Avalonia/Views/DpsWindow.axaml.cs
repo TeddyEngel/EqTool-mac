@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
+using EQTool.Avalonia.Services;
 using EQTool.Avalonia.ViewModels;
 using System;
 
@@ -15,6 +16,8 @@ namespace EQTool.Avalonia.Views
 
             viewModel = new DpsWindowViewModel();
             DataContext = viewModel;
+
+            WindowPreferences.Attach(this, AppServices.Initialize().Bootstrap.Settings.DpsWindowState);
         }
 
         protected override void OnClosed(EventArgs e)

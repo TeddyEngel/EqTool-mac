@@ -18,6 +18,8 @@ namespace EQTool.Avalonia.Views
             viewModel = new MobInfoWindowViewModel();
             DataContext = viewModel;
 
+            WindowPreferences.Attach(this, AppServices.Initialize().Bootstrap.Settings.MobWindowState);
+
             this.FindControl<Button>("OpenWikiButton").Click += OnWikiClicked;
         }
 
