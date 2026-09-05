@@ -178,7 +178,13 @@ namespace EQTool.Avalonia.ViewModels
         public bool OverlayClickThrough
         {
             get => settings.OverlayClickThrough;
-            set { settings.OverlayClickThrough = value; OnPropertyChanged(); Save(); }
+            set
+            {
+                settings.OverlayClickThrough = value;
+                OnPropertyChanged();
+                Save();
+                WindowManager.ApplyOverlayClickThrough(value);
+            }
         }
 
         // Speaking a sample is the only way to tell whether a voice is the one you

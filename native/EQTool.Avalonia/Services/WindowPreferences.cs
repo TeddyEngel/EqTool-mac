@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
 namespace EQTool.Avalonia.Services
@@ -66,8 +67,32 @@ namespace EQTool.Avalonia.Services
             MacOSWindowInterop.SetIgnoresMouseEvents(window, clickThrough);
         }
 
+        // What was last asked for, per window. The interop leaves no readable
+        // trace off macOS, and none at all without an NSWindow behind the window,
+        // so this is the only way to tell whether a caller reached this method.
+        private static readonly ConditionalWeakTable<Window, object> RequestedClickThrough =
+            new ConditionalWeakTable<Window, object>();
+
+        internal static bool TryGetRequestedClickThrough(Window window, out bool clickThrough)
+        {
+            if (window != null && RequestedClickThrough.TryGetValue(window, out var stored))
+            {
+                clickThrough = (bool)stored;
+                return true;
+            }
+
+            clickThrough = false;
+            return false;
+        }
+
         public static void SetClickThrough(Window window, bool clickThrough)
         {
+            if (window == null)
+                return;
+
+            RequestedClickThrough.Remove(window);
+            RequestedClickThrough.Add(window, clickThrough);
+
             if (!OperatingSystem.IsMacOS())
                 return;
 

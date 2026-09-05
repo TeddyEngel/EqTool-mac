@@ -1537,3 +1537,47 @@ So this is settled for the native client, on the real window rather than a
 stand-in: opaque overlay content does not swallow the click. That is the
 difference from the Wine path, where `WS_EX_TRANSPARENT` never reaches Cocoa and
 opaque pixels do swallow it, and it is the reason the native client exists.
+
+### The click-through setting did nothing while the overlay was open
+
+Found by checking a claim rather than the code. The click test drove
+`MacOSWindowInterop.SetIgnoresMouseEvents` directly, which is not how the client
+reaches it. Production goes through the settings checkbox, and that path was
+broken.
+
+`EventOverlayWindow` reads `OverlayClickThrough` once, in its `Opened` handler.
+Nothing subscribed to changes and `Save()` only persists, so toggling the
+checkbox against an overlay already on screen did nothing until it was reopened.
+
+The comment at that call site describes the intended workflow: with click-through
+on the overlay is purely visual, and it is "repositioned by turning the setting
+off again". That is exactly the direction that failed. Turning it off left the
+window still transparent to clicks, so the drag handle stayed unusable and the
+overlay could not be moved, with the control appearing to do nothing.
+
+`WindowManager` already tracks open windows by type, so the fix is a lookup and a
+re-apply from the settings setter rather than any new plumbing.
+
+Two things were needed to test it honestly. The first was an observable seam:
+`WindowPreferences` now records the requested value per window in a
+`ConditionalWeakTable`, because the interop leaves no readable trace off macOS
+and none at all without an `NSWindow`, so there was otherwise no way to tell
+whether a caller had reached it. The record is written on every platform, which
+is what lets the test run on the Windows CI machine.
+
+The second was checking the test actually fails without the fix. It does:
+removing the one wiring line from the setter turns the run red on
+`SettingsToggle_ReachesAnOpenOverlay` with "The toggle never reached the open
+overlay", and putting it back turns it green. Worth doing, because the first
+version of that test asserted only that the setting had changed and the window
+was findable, neither of which would have noticed the bug.
+
+The AppKit half was checked separately by driving the view model against a real
+overlay and reading the window back:
+
+```
+initial                        ignoresMouseEvents = False
+vm.OverlayClickThrough = true  ignoresMouseEvents = True
+vm.OverlayClickThrough = false ignoresMouseEvents = False
+vm.OverlayClickThrough = true  ignoresMouseEvents = True
+```

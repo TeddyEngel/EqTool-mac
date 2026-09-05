@@ -47,6 +47,28 @@ namespace EQTool.Avalonia.Services
             window.Activate();
         }
 
+        public static bool TryGet<TWindow>(out TWindow window) where TWindow : Window
+        {
+            if (OpenWindows.TryGetValue(typeof(TWindow), out var existing) && existing is TWindow typed)
+            {
+                window = typed;
+                return true;
+            }
+
+            window = null;
+            return false;
+        }
+
+        // The overlay reads this setting when it opens, so without this a change
+        // does nothing until it is reopened. That matters most when turning
+        // click-through back off, which is the only way to regain the drag handle
+        // and move the overlay.
+        public static void ApplyOverlayClickThrough(bool clickThrough)
+        {
+            if (TryGet<EventOverlayWindow>(out var overlay))
+                WindowPreferences.SetClickThrough(overlay, clickThrough);
+        }
+
         // Registers a window the app created itself, so the tray does not open a
         // second copy of something already on screen.
         public static void Adopt(Window window)
