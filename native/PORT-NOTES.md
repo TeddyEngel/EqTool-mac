@@ -823,3 +823,45 @@ the rows that do have icons. The probe was then reverted.
 
 Icons are drawn at 13px, not the 40px they are cut at, so a row carrying one is
 exactly as tall as one that does not and the 18pt pitch is unchanged.
+
+### Avalonia will not start while the display is asleep
+
+Launching the app after the Mac has idled produces a crash inside Avalonia's
+platform initialisation, before `Program.Main` reaches any application code:
+
+```
+Unhandled exception. System.InvalidOperationException: Avalonia.Native was not
+able to start the RenderTimer. Native error code is: -6661
+  at Avalonia.Native.AvaloniaNativeRenderTimer.add_Tick(Action`1 value)
+  at Avalonia.Rendering.Composition.Server.ServerCompositor..ctor(...)
+  at Avalonia.Native.AvaloniaNativePlatform.Initialize(...)
+```
+
+The stack points at rendering, so it reads like a graphics or build problem. It
+is neither. The render timer needs an awake display.
+
+Confirm before investigating anything else:
+
+```bash
+pmset -g powerstate IODisplayWrangler   # CurrentPowerState 0 means asleep
+```
+
+The decisive check is to run a second, unrelated Avalonia app — `mac/spike/OverlaySpike`
+serves. If that fails identically, the cause is environmental rather than
+anything in this project. It did, which is how this was ruled out as a
+clean-build regression.
+
+### Clean-build survival of the settings symlink: not yet proven
+
+`MacSettingsStoreTests` covers the symlink logic against temporary directories,
+including a simulated wipe of the build output, and those pass. The end-to-end
+case is only half verified:
+
+- Proven: after `dotnet clean` plus deleting `bin/` and `obj/`, the canonical
+  file under `~/Library/Application Support/PigParse` survives untouched. A
+  marker written into it before the clean was still present afterwards.
+- Not proven: that a subsequent launch recreates the symlink in the fresh build
+  output. The app could not start for the reason above, so the run proved
+  nothing either way.
+
+Re-run with the display awake to close this out.
