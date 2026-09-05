@@ -59,7 +59,7 @@ namespace EQTool.Avalonia.ViewModels
     public class TriggerEditorViewModel : INotifyPropertyChanged
     {
         private readonly EQToolSettings settings;
-        private readonly EQToolSettingsLoad loader;
+        private readonly Action save;
         private readonly ITextToSpeach speech;
         private readonly IAudioService audio;
 
@@ -71,11 +71,26 @@ namespace EQTool.Avalonia.ViewModels
         }
 
         public TriggerEditorViewModel(AppServices services)
+            : this(services.Bootstrap.Settings,
+                   () => services.Bootstrap.Loader.Save(services.Bootstrap.Settings),
+                   services.Resolve<ITextToSpeach>(),
+                   services.Resolve<IAudioService>())
         {
-            settings = services.Bootstrap.Settings;
-            loader = services.Bootstrap.Loader;
-            speech = services.Resolve<ITextToSpeach>();
-            audio = services.Resolve<IAudioService>();
+        }
+
+        // Persistence arrives as an action rather than the concrete loader: what
+        // this needs is "a way to save", and expressing it that way lets the
+        // editing rules be exercised without writing to disk.
+        public TriggerEditorViewModel(
+            EQToolSettings settings,
+            Action save,
+            ITextToSpeach speech,
+            IAudioService audio)
+        {
+            this.settings = settings;
+            this.save = save ?? (() => { });
+            this.speech = speech;
+            this.audio = audio;
 
             AudioTypes = Enum.GetValues(typeof(TriggerAudioType)).Cast<TriggerAudioType>().ToList();
             TimerTypes = Enum.GetValues(typeof(TimerType)).Cast<TimerType>().ToList();
@@ -257,7 +272,7 @@ namespace EQTool.Avalonia.ViewModels
             if (Current != null && Current.IsBuiltIn)
                 Current.Customized = true;
 
-            loader.Save(settings);
+            save();
             RaiseDetailChanged();
         }
 
@@ -275,7 +290,7 @@ namespace EQTool.Avalonia.ViewModels
 
             Triggers.Clear();
             foreach (var trigger in matching)
-                Triggers.Add(new TriggerRowViewModel(trigger, () => loader.Save(settings)));
+                Triggers.Add(new TriggerRowViewModel(trigger, save));
 
             OnPropertyChanged(nameof(TriggerCountText));
         }

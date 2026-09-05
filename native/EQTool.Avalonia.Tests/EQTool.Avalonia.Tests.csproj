@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Kept separate from EQTool.Core.Tests on purpose. That suite links ~43 upstream
+    test files and is the fidelity proof for the parsing port; pulling Avalonia
+    into it risks destabilising 450 passing tests for the sake of a handful of
+    view-model checks.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
+    <PackageReference Include="MSTest.TestAdapter" Version="4.0.2" />
+    <PackageReference Include="MSTest.TestFramework" Version="4.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EQTool.Avalonia\EQTool.Avalonia.csproj" />
+  </ItemGroup>
+
+</Project>
