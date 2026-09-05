@@ -1978,3 +1978,33 @@ One test sets the thread culture to `de-DE` before speaking. Formatted without
 `InvariantCulture` the command becomes `[[volm 0,35]]`, which `say` cannot parse
 and reads out loud instead of obeying, so the phrase would be prefixed with
 spoken punctuation.
+
+### The settings redirect deleted a file it promised to move
+
+Carrying the `Platform/` audit past the two files with direct upstream
+counterparts. `MacSettingsStore` looked like it might be one, since upstream's
+`EQToolSettingsLoad` does more than read JSON: it retries three times, back-fills
+null player lists, fills in missing spell class defaults, migrates enums, and
+runs `SyncBuiltInTriggers`, which is what the promise that built-in triggers pick
+up fixes on update rests on.
+
+None of that is lost. `SettingsBootstrap` builds the upstream loader and calls
+`Load()`, so the whole chain runs. `MacSettingsStore` only decides where the file
+lives, redirecting the executable directory path at
+`~/Library/Application Support/PigParse` through a symlink.
+
+Its own logic had a hole though. `MigrateExistingSettings` carries the comment
+"Move it rather than deleting it, but never overwrite a canonical file that
+already exists", and it returned early when the canonical file existed. Control
+then reached the caller's `File.Delete(linkPath)`, which is there to clear the
+path for the symlink. So in the one case where both are real files, the comment
+promised a move and the code performed a delete.
+
+The live settings were never at risk, since the canonical file is the one in use
+and is untouched. What was thrown away was the other real configuration, which is
+the one somebody would be looking for.
+
+It is moved to `settings.json.superseded` beside the canonical file now. The
+existing test for this case asserted only that the canonical file kept its
+contents and said nothing about the other, which is why the delete sat there
+unnoticed; the new test asserts the superseded content survives.

@@ -20,6 +20,7 @@ namespace EQTool.Core.Platform
     public static class MacSettingsStore
     {
         public const string SettingsFileName = "settings.json";
+        public const string SupersededSuffix = ".superseded";
 
         private const string ApplicationDirectoryName = "PigParse";
 
@@ -77,7 +78,12 @@ namespace EQTool.Core.Platform
                 return;
 
             if (File.Exists(canonicalPath))
+            {
+                // Returning here would lose it: the caller deletes whatever is
+                // still at linkPath so it can put the symlink there.
+                File.Move(linkPath, canonicalPath + SupersededSuffix, overwrite: true);
                 return;
+            }
 
             File.Move(linkPath, canonicalPath);
         }

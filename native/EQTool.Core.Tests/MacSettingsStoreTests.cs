@@ -87,6 +87,27 @@ namespace EQTool.Core.Tests
         }
 
         [TestMethod]
+        public void EnsureRedirected_CanonicalAlreadyExists_SetsTheOtherFileAsideRatherThanDeletingIt()
+        {
+            // Arrange
+            // Two real files: one in the build output and one already canonical.
+            // The canonical one wins, but the other is a real configuration and
+            // the redirect has to clear that path to put the symlink there.
+            _ = Directory.CreateDirectory(canonicalDirectory);
+            File.WriteAllText(CanonicalPath, "{\"DefaultEqDirectory\":\"/Users/someone/Canonical\"}");
+            File.WriteAllText(LinkPath, "{\"DefaultEqDirectory\":\"/Users/someone/Superseded\"}");
+
+            // Act
+            _ = MacSettingsStore.EnsureRedirected(executableDirectory, canonicalDirectory);
+
+            // Assert
+            var supersededPath = CanonicalPath + MacSettingsStore.SupersededSuffix;
+            Assert.IsTrue(File.Exists(supersededPath), "The superseded settings file was deleted rather than kept.");
+            StringAssert.Contains(File.ReadAllText(supersededPath), "/Users/someone/Superseded");
+            StringAssert.Contains(File.ReadAllText(CanonicalPath), "/Users/someone/Canonical");
+        }
+
+        [TestMethod]
         public void EnsureRedirected_CalledTwice_RemainsLinkedAndPreservesContent()
         {
             // Arrange
