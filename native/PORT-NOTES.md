@@ -1863,3 +1863,52 @@ is put in place, that a second call leaves an existing one alone, that 25ms does
 abort `^(a+)+$` against forty characters, and that it is still generous enough
 for an ordinary log line. The catastrophic case runs on a worker with a ten
 second cap so that a missing bound fails the test rather than hanging the run.
+
+### Auditing the stubs deliberately
+
+Four defects so far had come out of `Compat/`, each found by accident. The
+regex timeout was the clearest: upstream put it in `App`'s static constructor,
+the stub replacing `App` did not carry it, and nothing failed. That is the shape
+to look for, so this went through every stub asking what the original did that
+the replacement does not, and whether compiled code still reaches it.
+
+Thirty-four types. Most of `WindowsShims.cs` stands in for WPF types such as
+`Brush`, `Rect` and `Visibility`, where there is no upstream behaviour to lose.
+The ones worth examining are in `EqToolStubs.cs`.
+
+Two findings.
+
+`BinarySerializer` throws from both methods. Upstream uses `BinaryFormatter`,
+which .NET 9 removed, which is why it was stubbed. Every call site catches:
+`MapLoad` falls back to parsing the map file, `ParseSpells_spells_us` falls back
+to parsing the spell file. So maps and spells are correct, and the binary caches
+those two paths were written to use never work. The cost is startup time on every
+run rather than once. Restoring it means choosing a different format, since the
+old one cannot be read or written on .NET 9 at all.
+
+`ForegroundWindowHelper.IsEqGameFocused` returns false, always, and the call site
+reads:
+
+```
+// Only warn when eqgame is NOT the focused window.
+if (ForegroundWindowHelper.IsEqGameFocused()) return;
+```
+
+So the early return never happens and the attacked-while-away alert fires while
+the player is looking at the game, which is exactly when it should stay quiet.
+Both switches behind it default to false, so nobody sees this without turning the
+alert on first, and anyone who does turn it on gets an alert in every fight.
+
+It is left unimplemented on purpose. Answering it means knowing whether the
+EverQuest window is frontmost, and under Wine that is a Wine-hosted window on a
+machine with no EverQuest installed to check against. Matching on a guessed
+bundle identifier is the kind of unverified assumption that has already cost this
+port several rounds.
+
+The rest are sound. `LoggingService` does nothing deliberately, since the real one
+posts exception text containing the account name. `SpellIcons` returns
+placeholders because the native client draws icons through `SpellIconService`
+instead. `SettingsWindowViewModel.GroupLeaderName` is written by
+`GroupLeaderHandler` and read by nothing here, so the group leader is tracked and
+never displayed, which is a missing readout rather than wrong behaviour. The
+interfaces and enums carry no behaviour.
