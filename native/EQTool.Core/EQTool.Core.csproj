@@ -34,6 +34,15 @@
                       LinkBase="Linked\EQToolShared\Properties" />
   </ItemGroup>
 
+  <!-- Zone maps, 456 files, referenced in place rather than copied. MapLoad filters
+       manifest resource names with StartsWith("eqtool.map_files." + zone), so the
+       logical name must match upstream's assembly name rather than this one. -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\EQTool\map_files\*.txt">
+      <LogicalName>EQTool.map_files.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
   <!-- Spell icon sheets, pre-baked from EQTool\Spells\*.tga by native/scripts/bake-spell-icons.sh.
        Upstream decodes the .tga at runtime through TGASharpLib and System.Drawing, neither
        of which is available here. See "Spell icons" in native/PORT-NOTES.md. -->
@@ -79,6 +88,16 @@
     <Compile Include="..\..\EQTool\Services\DebugOutput.cs"        LinkBase="Linked\EQTool\Services" />
     <Compile Include="..\..\EQTool\Services\LogEvents.cs"          LinkBase="Linked\EQTool\Services" />
     <Compile Include="..\..\EQTool\Services\LogParser.cs"          LinkBase="Linked\EQTool\Services" />
+
+    <!-- Map parsing and geometry. Two files are deliberately excluded because they
+         manipulate WPF UI rather than compute anything: MapViewModelService.cs
+         (41 WPF references, assembles a Canvas) and MapOpacityHelper.cs (mutates
+         Shape and TextBlock opacity directly). The Avalonia client renders the
+         MapLine/MapLabel geometry these produce and applies its own fade rule. -->
+    <Compile Include="..\..\EQTool\Models\EQMapColor.cs"            LinkBase="Linked\EQTool\Models" />
+    <Compile Include="..\..\EQTool\Services\Map\MapData.cs"         LinkBase="Linked\EQTool\Services\Map" />
+    <Compile Include="..\..\EQTool\Services\Map\MapLoad.cs"         LinkBase="Linked\EQTool\Services\Map" />
+    <Compile Include="..\..\EQTool\Services\Map\ZoneSpawnTimes.cs"  LinkBase="Linked\EQTool\Services\Map" />
     <Compile Include="..\..\EQTool\Services\EQToolSettingsLoad.cs" LinkBase="Linked\EQTool\Services" />
     <Compile Include="..\..\EQTool\Services\FindEq.cs"             LinkBase="Linked\EQTool\Services" />
     <Compile Include="..\..\EQTool\Services\BoatScheduleService.cs" LinkBase="Linked\EQTool\Services" />
