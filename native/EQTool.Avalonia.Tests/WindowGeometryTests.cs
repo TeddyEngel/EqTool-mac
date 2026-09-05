@@ -142,6 +142,98 @@ namespace EQTool.Avalonia.Tests
         }
 
         [TestMethod]
+        public void OpeningAWindow_MarksItAsNotClosed()
+        {
+            OnUiThread(() =>
+            {
+                // Arrange
+                var settings = new EQToolSettings { Triggers = new List<Trigger>() };
+                settings.OverlayWindowState.Closed = true;
+                var overlay = NewOverlay(settings, out var viewModel);
+
+                // Act
+                overlay.Show();
+
+                // Assert
+                Assert.IsFalse(settings.OverlayWindowState.Closed);
+
+                overlay.Close();
+                viewModel.Dispose();
+            });
+        }
+
+        [TestMethod]
+        public void ClosingAWindow_MarksItClosed()
+        {
+            OnUiThread(() =>
+            {
+                // Arrange
+                var settings = new EQToolSettings { Triggers = new List<Trigger>() };
+                var overlay = NewOverlay(settings, out var viewModel);
+                overlay.Show();
+
+                // Act
+                overlay.Close();
+
+                // Assert
+                Assert.IsTrue(settings.OverlayWindowState.Closed);
+
+                viewModel.Dispose();
+            });
+        }
+
+        [TestMethod]
+        public void ShouldReopen_OnAFreshInstall_IsFalse()
+        {
+            // Arrange
+            // Closed defaults to false for most of these upstream, so going by
+            // that alone would open five windows at once for somebody who has
+            // never run the client. Nothing was open, because there was no
+            // previous session.
+            var state = new EQTool.Models.WindowState { Closed = false };
+
+            // Assert
+            Assert.IsNull(state.WindowRect);
+            Assert.IsFalse(WindowPreferences.ShouldReopen(state));
+        }
+
+        [TestMethod]
+        public void ShouldReopen_AfterAWindowWasOpenAtExit_IsTrue()
+        {
+            // Arrange
+            // Closing captures the geometry, so a stored rect is what separates a
+            // window that was really open from one never seen.
+            var state = new EQTool.Models.WindowState
+            {
+                Closed = false,
+                WindowRect = new System.Windows.Rect(100, 120, 400, 300),
+            };
+
+            // Assert
+            Assert.IsTrue(WindowPreferences.ShouldReopen(state));
+        }
+
+        [TestMethod]
+        public void ShouldReopen_WhenItWasClosedByHand_IsFalse()
+        {
+            // Arrange
+            var state = new EQTool.Models.WindowState
+            {
+                Closed = true,
+                WindowRect = new System.Windows.Rect(100, 120, 400, 300),
+            };
+
+            // Assert
+            Assert.IsFalse(WindowPreferences.ShouldReopen(state));
+        }
+
+        [TestMethod]
+        public void ShouldReopen_WithNoState_IsFalse()
+        {
+            Assert.IsFalse(WindowPreferences.ShouldReopen(null));
+        }
+
+        [TestMethod]
         public void ARectOnAScreen_IsRestored()
         {
             OnUiThread(() =>

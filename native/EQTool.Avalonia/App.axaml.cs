@@ -4,6 +4,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform;
 using EQTool.Avalonia.Services;
+using EQTool.Models;
 using EQTool.Avalonia.Views;
 using System;
 
@@ -41,9 +42,42 @@ namespace EQTool.Avalonia
                 WindowManager.Adopt(mainWindow);
 
                 trayIcon = CreateTrayIcon();
+
+                ReopenLastSession(AppServices.Initialize().Bootstrap.Settings);
             }
 
             base.OnFrameworkInitializationCompleted();
+        }
+
+        // Each is guarded on its own: a window that throws on construction must
+        // not take the rest of startup with it.
+        private static void ReopenLastSession(EQToolSettings settings)
+        {
+            if (settings == null)
+                return;
+
+            // The timers window is the main window and is already open.
+            Reopen(settings.MapWindowState, WindowManager.ShowMap, "Map");
+            Reopen(settings.DpsWindowState, WindowManager.ShowDps, "DPS");
+            Reopen(settings.MobWindowState, WindowManager.ShowMobInfo, "Mob Info");
+            Reopen(settings.ConsoleWindowState, WindowManager.ShowConsole, "Console");
+            Reopen(settings.OverlayWindowState, WindowManager.ShowOverlay, "Overlay");
+            Reopen(settings.SettingsWindowState, WindowManager.ShowSettings, "Settings");
+        }
+
+        private static void Reopen(EQTool.Models.WindowState state, Action show, string name)
+        {
+            if (!WindowPreferences.ShouldReopen(state))
+                return;
+
+            try
+            {
+                show();
+            }
+            catch (Exception failure)
+            {
+                Console.Error.WriteLine($"[pigparse] could not reopen {name}: {failure.Message}");
+            }
         }
 
         private TrayIcon CreateTrayIcon()

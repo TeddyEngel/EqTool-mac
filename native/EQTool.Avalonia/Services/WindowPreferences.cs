@@ -30,9 +30,15 @@ namespace EQTool.Avalonia.Services
             if (window == null || state == null)
                 return;
 
-            void Apply(object sender, EventArgs e) => ApplyNow(window, state, asOverlay);
+            void Apply(object sender, EventArgs e)
+            {
+                state.Closed = false;
+                ApplyNow(window, state, asOverlay);
+            }
+
             void Remember(object sender, WindowClosingEventArgs e)
             {
+                state.Closed = true;
                 Capture(window, state);
                 Persist?.Invoke();
             }
@@ -47,6 +53,18 @@ namespace EQTool.Avalonia.Services
                 window.Opened -= Apply;
                 window.Closing -= Remember;
             };
+        }
+
+        // Whether a window should come back on the next launch.
+        //
+        // Closed is false on a fresh install for most of these, which would mean
+        // opening five windows at once for somebody who has never run the client.
+        // A window that was genuinely open at exit went through Capture on the
+        // way out, so a stored rect is what separates "was open" from "never
+        // seen".
+        public static bool ShouldReopen(EQTool.Models.WindowState state)
+        {
+            return state != null && !state.Closed && state.WindowRect.HasValue;
         }
 
         // Upstream saves this from a WPF base class that is not part of this

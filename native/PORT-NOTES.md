@@ -2251,3 +2251,35 @@ case for a rect far off every screen not being restored, and no case for a rect
 on a screen being restored, so a `Restore` that never applied anything would have
 passed all six. The headless backend reports one screen at 0,0,1920,1280, which
 is what makes the positive case meaningful: 300,200 is inside it and is applied.
+
+### Windows did not come back after a restart
+
+`WindowState` carries three fields. The last note fixed `WindowRect`; the other
+two were sitting in the same struct, equally unread.
+
+`Closed` is written by upstream's `BaseSaveStateWindow` when a window opens and
+closes, and read in `App.xaml.cs`, which reopens each window that was still open
+when the client last exited. Nothing here wrote it and nothing read it, so every
+launch produced one window and the rest had to be reopened by hand. Together with
+the geometry fault, they would not have come back in the right place either.
+
+`WindowPreferences` now clears `Closed` when a window opens and sets it when the
+window closes, alongside capturing the geometry. `App` reopens the map, DPS, mob
+info, console, overlay and settings windows, each guarded on its own so a window
+that throws on construction cannot take startup with it. The timers window is the
+main window and is already open.
+
+One part of this is a judgement rather than a repair, and it is worth naming.
+Upstream's fresh-install defaults set `Closed = false` on five window states, so
+porting the check literally would open five windows at once for somebody who has
+never run the client. That reads as wrong: on a first run there was no previous
+session, so nothing was open. `ShouldReopen` therefore also requires a stored
+rect, on the grounds that a window genuinely open at exit went through `Capture`
+on its way out and a window never opened has no geometry at all. It is a proxy,
+it is mine rather than upstream's, and it can be dropped by deleting one
+condition if the upstream behaviour is preferred.
+
+`WindowState.State`, which carries maximised and minimised, is still unread. It
+is left that way deliberately: none of these windows can currently be maximised
+in a way worth restoring, and inventing that is a second judgement on top of the
+first.
