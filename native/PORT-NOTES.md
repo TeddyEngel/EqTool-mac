@@ -1364,3 +1364,30 @@ The wording was also loose about when the posting begins. The elapsed handler
 returns early while `activePlayer.Player?.Server` is null, so the timer runs from
 launch and the requests start once the log has identified the server. The file
 now says that instead of describing it as recognising the character.
+
+### windowNumberAtPoint, retried with the screen awake
+
+Retried once the display was actually on, since the first attempt was recorded
+as inconclusive rather than refuted. It still does not work from a probe script,
+and the reason is not the one guessed at the time.
+
+What was established along the way:
+
+- The call itself works through ctypes. Seven points returned five distinct
+  results, with `0` for off-screen coordinates and real window numbers for
+  points on screen. An earlier suspicion that `NSPoint` was being marshalled
+  wrongly by value is wrong.
+- The probe's own windows composite. They appear in
+  `CGWindowListCopyWindowInfo`, alongside the couple of hundred others.
+- `setActivationPolicy:` with `NSApplicationActivationPolicyRegular` returns
+  false in an unbundled script.
+
+So the windows exist and are drawn, but a point inside them returns some other
+window, consistently, whatever the coordinate space. The likely reason is the
+third item: a process that cannot become a regular application still gets its
+windows composited, but they do not take part in hit testing. That is a
+hypothesis rather than a demonstrated fact, and it is where this stopped.
+
+Anyone retrying should do it from inside the Avalonia client, which is a regular
+application and owns a real overlay window, instead of from a script. The
+alternative remains a person clicking once.
