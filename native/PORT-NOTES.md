@@ -1338,3 +1338,29 @@ Five tests hold this in place. One asserts that the guarded client is the only
 holder of an `HttpMessageInvoker`, and four assert that the self-networking
 services stay out of the build. Compiling any of them in would fail loudly
 rather than quietly reopen the hole.
+
+### The Wine disclosure, checked against the Wine binary
+
+The warning in `mac/README.md` was first written by following the chain in
+`NativeContainer`: `LogParser` takes every `BaseHandler`, `SlainHandler` takes a
+`PlayerTrackerService`, and that constructor starts the timer. None of that is
+evidence about the Wine binary, which runs the WPF application and its own
+`EQTool/DI.cs`. The claim happened to be right, but it was not checked.
+
+Upstream is more direct than the inference suggested:
+
+```
+EQTool/DI.cs:52          RegisterType<Services.PlayerTrackerService>().AsSelf().SingleInstance()
+EQTool/App.xaml.cs:412   container.Resolve<PlayerTrackerService>()
+```
+
+It is registered by hand and resolved by hand during startup, so the twenty
+second timer starts whether or not any handler would have pulled it in. `DI.cs`
+also registers `AnyConcreteTypeNotAlreadyRegisteredSource` and scans for
+`IEqLogParser` and `BaseHandler` in the same way, so the indirect route exists
+as well.
+
+The wording was also loose about when the posting begins. The elapsed handler
+returns early while `activePlayer.Player?.Server` is null, so the timer runs from
+launch and the requests start once the log has identified the server. The file
+now says that instead of describing it as recognising the character.

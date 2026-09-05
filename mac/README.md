@@ -28,10 +28,11 @@ Under Wine you run the ordinary Windows build, so it does what it does on
 Windows. Two of those things are worth knowing before you install, because the
 interface announces neither.
 
-Once the program works out which character you are playing, it posts character
-data to `pigparse.azurewebsites.net` every twenty seconds. The location sharing
-setting does not decide whether that request goes out. It rides inside the
-request as a field, and the request is sent either way.
+The program starts a twenty second timer when it launches, and once it has read
+enough of the log to know which server you are on, each tick posts character data
+to `pigparse.azurewebsites.net`. The location sharing setting does not decide
+whether that request goes out. It rides inside the request as a field, and the
+request is sent either way.
 
 The program posts its errors to the same service. The message is the exception
 text, which routinely contains file paths, and on macOS those paths contain your
