@@ -1506,3 +1506,34 @@ whose startup builds a `MainWindow` and reads the live settings file. And the
 classic desktop lifetime shuts the process down before any window is created
 unless `ShutdownMode` is set to `OnExplicitShutdown`, which presents as the
 program exiting silently with status zero.
+
+### The real overlay does pass clicks through
+
+The inconclusive run above was a coordinate mistake, and taking the point from
+the `NSWindow` frame instead of `PointToScreen` fixed it, which is the same
+correction that sorted out the hit test earlier.
+
+The arithmetic is worth writing down. The frame comes back as
+`x=400 y=590 w=640 h=450` for a window placed at `PixelPoint(400, 400)`. Cocoa
+measures from the bottom, so the top edge is `590 + 450 = 1040`, the drag handle
+centre sits twelve points below that at `1028`, and the CoreGraphics point that
+`CGEventPost` wants is `1440 - 1028 = 412`. That lands twelve points in from the
+window's top left corner, which is where the handle is.
+
+With the point right, every row behaves:
+
+| flag | front at point | click received by |
+| --- | --- | --- |
+| false | overlay | overlay |
+| true | underneath | underneath |
+| false | overlay | overlay |
+
+The first row is the control, and it is the demanding one. The target was the
+`DragHandle`, the only part of the overlay that is both opaque and left
+hit-test visible so it can be dragged. A click there reaches the overlay when
+click-through is off and reaches the window behind when it is on.
+
+So this is settled for the native client, on the real window rather than a
+stand-in: opaque overlay content does not swallow the click. That is the
+difference from the Wine path, where `WS_EX_TRANSPARENT` never reaches Cocoa and
+opaque pixels do swallow it, and it is the reason the native client exists.
