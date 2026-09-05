@@ -987,3 +987,62 @@ over three lines here and one line on Windows.
 | `17-console-live.png` | Seven entries from a real log tail: `YouBeginCastingParser` on Levitate, `SpellCastOnOtherParser` on `Jobob's feet leave the ground.`, `SpellCastOnOtherHandler` reporting `Skipped dt >= 2400 AND True`, `YouHaveFinishedMemorizingParser` on Aegolism, Dazzle, `YourSpellInterruptedParser`, `YouForgetParser` |
 | `18-console-follows-tail.png` | Thirty-one entries with the view pinned to the newest |
 | `19-console-holds-position.png` | The reader scrolled up; four more entries have arrived (35 lines in the header) and the view has not moved |
+
+## The remaining integrations, and why they are not simply ported
+
+Six upstream features are still unported. They are grouped here because the
+decision on each is a judgement call rather than an engineering one, and three
+of them should probably never be ported at all.
+
+### Auto-update: must not be ported
+
+`UpdateService` downloads a zip from `smasherprog/EqTool` releases, extracts it
+over the running install and relaunches. Upstream ships Windows and Linux zips.
+There is no macOS release, so on a native client this would download Windows
+binaries and try to run them.
+
+This is already guarded off for the Wine build with `#if MACOS` early returns,
+for the related reason that it would otherwise overwrite the patched binary with
+upstream's unpatched one. Porting it to the native client would be a defect, not
+a feature. If the native client ever needs updating, it needs its own mechanism
+against its own releases.
+
+### Location sharing: works, but broadcasts more than it looks like
+
+`SignalrPlayerHub` links cleanly. Its only WPF imports are
+`System.Windows.Media` and `Media3D`, both already shimmed, and
+`Microsoft.AspNetCore.SignalR.Client` has a net9.0 build.
+
+The reason it is not wired up yet is behavioural. `SendMyLocationToOthers`
+(`SignalrPlayerHub.cs:149`) fires on every `PlayerLocationEvent`, so on every
+`/loc`, and sends character name, guild, server, zone and exact X/Y/Z to
+pigparse.org. The `Sharing` preference travels *inside the payload* rather than
+gating the send, so filtering happens on the server: the client transmits
+whenever a server is known, regardless of the setting.
+
+That is upstream's design and is presumably fine for people who opted into it
+there. It is not something a port should switch on quietly, and it cannot be
+meaningfully verified here anyway without a live hub and other players in zone.
+It needs an explicit, defaulted-off opt-in before being wired.
+
+### Discord login, inventory sync, UI file sync
+
+`DiscordAuthService` (65 lines) and `InventoryWatcherService` (158 lines) carry
+no WPF references at all; `UIFileSyncService` (417 lines) has one. So all three
+are portable in the mechanical sense.
+
+They upload character inventory and EverQuest UI `.ini` files to pigparse.org,
+gated behind a Discord OAuth browser flow. None of it can be verified without a
+real Discord account and the upstream API, and all of it moves user data off the
+machine. Same conclusion as location sharing: an explicit opt-in, not a silent
+port.
+
+### P99 login middlemand
+
+Binds a local socket and proxies login traffic. Portable in principle. Unverified
+here because it needs a real P99 login attempt to exercise.
+
+### Player and Server settings tabs
+
+The Player tab is the inventory viewer and depends on Discord login, so it
+follows that decision. The Server tab is 17 lines and can land whenever.
