@@ -3259,3 +3259,31 @@ same `macos-14` image that `native-core` already uses.
 The one thing still unverified is that it runs, and that limit is the same one
 from round thirteen: no GUI application starts in this environment, stock
 Avalonia included, so execution is not something I can check here.
+
+### An end to end probe I started building and then did not
+
+The gap between "startup completes" and "the thing works" looked worth closing
+with a probe: start headless with a desktop lifetime, push a log line, watch a
+window's view model react. Counting what already exists deflated it.
+
+```
+upstream test files driving log lines through LogParser   15
+.Push( call sites in them                                338
+upstream test files linked into EQTool.Core.Tests          47
+```
+
+Log line to parser to handler to event is asserted 338 times against real log
+text, and those files run in the Core suite and now in CI. View models are
+covered separately by the Avalonia suite. Container construction and the startup
+wiring were shown by the headless probe earlier.
+
+What is genuinely uncovered is one hop: event to the particular view model
+instance that a window binds. Building a bespoke harness for that needs a
+sandboxed `HOME` set before process start, a fabricated desktop lifetime, a log
+line chosen to produce deterministic output, and care about when the parser
+raises. That is a lot of scaffolding for a narrow seam, with a good chance of an
+inconclusive result needing its own caveat.
+
+Recording it so the same worry does not get raised again from memory. The
+coverage is better than "nothing tests integration" suggests, and I was about to
+write that sentence before counting.
