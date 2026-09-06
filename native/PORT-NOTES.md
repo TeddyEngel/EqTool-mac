@@ -3007,3 +3007,32 @@ minutes and cannot touch real settings.
 One smaller correction while I was in there. These notes have listed
 `WindowManager.OpenWindows` among its public surface for most of the session. It
 is `private static readonly`, and the compiler said so.
+
+### -6661 is the spawn context, established with a control
+
+I asserted twice that the render timer failure was probably about not having a
+display session, without testing it. Two hypotheses were available and both are
+now settled.
+
+Architecture first, because the build pins `RuntimeIdentifier=osx-x64` and a
+cross-architecture load would produce exactly this kind of opaque native error.
+Refuted. The machine is an Intel i9-10910 reporting `x86_64`, the app binary is
+Mach-O x86_64, and `libAvaloniaNative.dylib` ships as a universal binary with
+both x86_64 and arm64 slices. Nothing is mismatched.
+
+Then the control I should have run first. A stock Avalonia application, created
+from scratch with `UsePlatformDetect` and a single empty `Window`, containing no
+code from this project, fails in the same spawn context with the same message:
+
+```
+Avalonia.Native was not able to start the RenderTimer. Native error code is: -6661
+```
+
+So the failure belongs to how this environment spawns GUI processes, not to the
+port. That is worth being precise about in both directions. It does not show the
+client starts correctly on a real display, which is still unverified. It removes
+the reason to suspect it does not.
+
+The lesson is the cheap one. Two rounds were spent treating a failure as possibly
+project specific when a five minute control with an empty window would have
+answered it. Reach for the control before the label.
