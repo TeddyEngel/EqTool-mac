@@ -2823,3 +2823,55 @@ declaration in `MacOSWindowInterop`, and would keep passing if someone changed
 the real one. Widening the private extern with `InternalsVisibleTo` to cover one
 marshalling check is more surface than the risk justifies. The check is recorded
 here instead, which is the honest version of what it is worth.
+
+### Generalising the zero-caller check, and mostly measuring my own script
+
+The AppKit bug had a mechanical signature: a public member with no caller in
+tests and none in production. That is checkable across the whole surface, so I
+tried it on all 259 public members in the Avalonia project and `Platform`.
+
+The first run flagged 134 of 259, which is not a finding, it is a broken script.
+The tell was `IsEqGameFocused` at zero callers, when I had read
+`AfkAttackedHandler.cs:41` calling it earlier the same day. Three defects: it
+only grepped `native/`, so callers in upstream `EQTool/` were invisible; it
+ignored `.axaml`, so every XAML binding looked dead; and `Black`, `Cyan`,
+`Freeze` and friends are WPF compat shims that exist to be called by upstream.
+
+Fixed and restricted to names of twelve characters or more, it gave eight
+candidates and passed a sanity check on three members I had verified by hand.
+Of the eight, four were Avalonia `StyledProperty` registrations, which are
+reached through their wrapper rather than by name.
+
+`RefreshLoggingState` was a false positive from my own filter. It is called at
+lines 123 and 147 of the file that declares it, and I had excluded same-file hits
+after criticising exactly that exclusion in the first version.
+
+Two are write-only properties on `SettingsBootstrap`, `EqDirectoryResolved` and
+`SettingsFilePath`, both assigned and never read. The resolver's own
+`DefaultEqDirectoryResolved` is read and tested; it is the copy carried onto the
+bootstrap result that nothing consumes. Left alone. They look like the start of a
+diagnostic affordance, and adding UI for them is a product decision rather than
+cleanup.
+
+### The DPS row shows what upstream's row shows
+
+`CurrentDps` and `CurrentDpsText` were the one real orphan: assigned from
+`entity.DPS`, formatted, and bound nowhere. `entity.DPS` is the trailing twelve
+second average that the upstream README headlines, and `DetailText` labels
+`OverallDps` as "dps", so this looked like a porting gap where the headline
+metric had been dropped.
+
+It is not. Upstream's per-row column binds `TotalDPS`:
+
+```xml
+<TextBlock ... Text="{Binding TotalDPS}" ToolTip="Total DPS!" />   DPSMeter.xaml:123
+```
+
+`OverallDps` is assigned from `entity.TotalDPS`, so the native row already shows
+the same number in the same position. Checking upstream first is what kept this
+from being written up as a missing feature.
+
+That leaves the two members as dead surface rather than a gap, so they are
+removed. It is a three line deletion with no behaviour change, done for
+consistency with the member audit earlier in this session rather than because it
+fixes anything.

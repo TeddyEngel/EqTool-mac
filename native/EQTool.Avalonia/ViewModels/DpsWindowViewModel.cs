@@ -17,7 +17,6 @@ namespace EQTool.Avalonia.ViewModels
         {
             SourceName = entity.SourceName;
             TotalDamage = entity.TotalDamage;
-            CurrentDps = entity.DPS;
             OverallDps = entity.TotalDPS;
             HighestHit = entity.HighestHit;
             IsNpc = entity.isSourceNpc;
@@ -34,8 +33,6 @@ namespace EQTool.Avalonia.ViewModels
 
         public int TotalDamage { get; }
 
-        public int CurrentDps { get; }
-
         public int OverallDps { get; }
 
         public int HighestHit { get; }
@@ -45,8 +42,6 @@ namespace EQTool.Avalonia.ViewModels
         public double ShareOfTarget { get; }
 
         public string TotalDamageText => TotalDamage.ToString("N0");
-
-        public string CurrentDpsText => CurrentDps.ToString("N0");
 
         public string DetailText => "dps " + OverallDps.ToString("N0") + " · max " + HighestHit.ToString("N0");
     }
