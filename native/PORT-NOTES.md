@@ -3216,3 +3216,40 @@ load the wrong one.
 Two things this does not show. The arm64 build has not been run, because this
 machine cannot execute it. And a universal binary is a separate mechanism,
 building both identifiers and combining them, which I have not attempted.
+
+### Dropping the identifier is a third option, and a better one
+
+I had framed the architecture question as x64 against arm64. Building with no
+identifier at all gives something neither of those does:
+
+```
+                        client assembly
+osx-x64  (current)      PE32+ x86-64      platform specific
+no RuntimeIdentifier    PE32  i386        AnyCPU
+```
+
+The managed assembly comes out AnyCPU, exactly like `EQTool.Core`, so it loads in
+a process of either architecture. Only the apphost carries a machine type, and it
+follows whoever runs the build.
+
+I raised an objection to this and then checked it. Avalonia ships native binaries
+per identifier, so the worry was that a build with no identifier would leave them
+unresolved. It does not. All three arrive, and they arrive in the architecture
+neutral folder:
+
+```
+runtimes/osx/native/libAvaloniaNative.dylib
+runtimes/osx/native/libSkiaSharp.dylib
+runtimes/osx/native/libHarfBuzzSharp.dylib
+```
+
+`osx`, not `osx-x64` or `osx-arm64`, and those three files are the universal
+binaries carrying both slices. Same count as the pinned build.
+
+This would also unstick CI. `native-client` waits on the scarce Intel image only
+because the assembly is marked x86-64, and an AnyCPU assembly would run on the
+same `macos-14` image that `native-core` already uses.
+
+The one thing still unverified is that it runs, and that limit is the same one
+from round thirteen: no GUI application starts in this environment, stock
+Avalonia included, so execution is not something I can check here.
