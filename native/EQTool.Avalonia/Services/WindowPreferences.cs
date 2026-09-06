@@ -55,16 +55,12 @@ namespace EQTool.Avalonia.Services
             };
         }
 
-        // Whether a window should come back on the next launch.
-        //
-        // Closed is false on a fresh install for most of these, which would mean
-        // opening five windows at once for somebody who has never run the client.
-        // A window that was genuinely open at exit went through Capture on the
-        // way out, so a stored rect is what separates "was open" from "never
-        // seen".
+        // Matches upstream, which reopens on Closed alone. Closed is false on a
+        // fresh install, so a first run opens the same set the Windows client
+        // opens rather than nothing.
         public static bool ShouldReopen(EQTool.Models.WindowState state)
         {
-            return state != null && !state.Closed && state.WindowRect.HasValue;
+            return state != null && !state.Closed;
         }
 
         // Upstream saves this from a WPF base class that is not part of this

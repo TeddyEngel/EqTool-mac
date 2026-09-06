@@ -183,26 +183,22 @@ namespace EQTool.Avalonia.Tests
         }
 
         [TestMethod]
-        public void ShouldReopen_OnAFreshInstall_IsFalse()
+        public void ShouldReopen_OnAFreshInstall_IsTrue()
         {
             // Arrange
-            // Closed defaults to false for most of these upstream, so going by
-            // that alone would open five windows at once for somebody who has
-            // never run the client. Nothing was open, because there was no
-            // previous session.
+            // Closed is false before the client has ever run, and upstream opens
+            // on that alone, so a first run shows windows rather than nothing.
             var state = new EQTool.Models.WindowState { Closed = false };
 
             // Assert
             Assert.IsNull(state.WindowRect);
-            Assert.IsFalse(WindowPreferences.ShouldReopen(state));
+            Assert.IsTrue(WindowPreferences.ShouldReopen(state));
         }
 
         [TestMethod]
         public void ShouldReopen_AfterAWindowWasOpenAtExit_IsTrue()
         {
             // Arrange
-            // Closing captures the geometry, so a stored rect is what separates a
-            // window that was really open from one never seen.
             var state = new EQTool.Models.WindowState
             {
                 Closed = false,

@@ -9,12 +9,11 @@ namespace EQTool.Avalonia.Tests
     // A window only records its geometry and its open state because it called
     // WindowPreferences.Attach. Nothing else writes either one.
     //
-    // App.ReopenLastSession brings back the windows that were open at exit, and
-    // ShouldReopen needs a stored rect to tell "was open" from "never seen". So a
-    // window listed there that never attaches can never come back, and its entry
-    // is dead. That happened: the settings window was on the reopen list and was
-    // the only view that did not attach, so the line could not fire and the window
-    // did not remember its position either.
+    // App.ReopenLastSession brings back the windows that were open at exit. A
+    // window listed there that never attaches still reopens, because ShouldReopen
+    // goes by Closed alone, but it never records where it was and never honours
+    // being closed by hand. That happened: the settings window was on the reopen
+    // list and was the only view that did not attach.
     //
     // This reads the sources rather than exercising the windows. Constructing
     // MapWindow, DpsWindow, ConsoleWindow, MobInfoWindow or SettingsWindow through
