@@ -2788,3 +2788,38 @@ round.
 
 `Configuration=Mac` is referenced in one place today, the msbuild line in
 `.github/workflows/mac-build.yml`. Nothing downstream consumes what it produces.
+
+### Auditing the rest of the interop, and finding nothing
+
+After the AppKit precondition turned up, the obvious worry was that
+`SetWindowLevel`, `SetIgnoresMouseEvents` and `MakeOverlayBehaviour` shared the
+gap. They do not. All three have test callers, and the two tests are scoped
+honestly by their own names: `InteropCalls_OnAWindowWithNoNSWindow_DoNotThrow`
+and `InteropCalls_OnANullWindow_DoNotThrow` cover the early-return paths and
+claim nothing more. That is different from `TryGetFrontmostProcessId`, which had
+no caller at all.
+
+What none of those tests reach is the ObjC call itself, because headless Avalonia
+never produces an NSWindow. So the real question was which `objc_msgSend` shapes
+had ever executed:
+
+```
+void_bool   setIgnoresMouseEvents:   verified by hand, CGEventPost click-through
+void_nint   setLevel:                verified in the spike at levels 3, 25, 27
+ulong ret   collectionBehavior       unverified until now
+void_ulong  setCollectionBehavior:   only ever exercised alongside the read
+```
+
+The read shape was the one worth checking, since `MakeOverlayBehaviour` reads the
+mask, clears and sets bits, and writes it back. Bad return marshalling there
+would read garbage and write garbage flags, and nothing would report an error.
+
+It is correct. Calling `[[NSProcessInfo processInfo] processorCount]` through the
+same declaration returned 20, matching `Environment.ProcessorCount`.
+
+I am deliberately not turning that into a test. A test in the test project has to
+declare its own `DllImport`, so it would pin a copy of the shape rather than the
+declaration in `MacOSWindowInterop`, and would keep passing if someone changed
+the real one. Widening the private extern with `InternalsVisibleTo` to cover one
+marshalling check is more surface than the risk justifies. The check is recorded
+here instead, which is the honest version of what it is worth.
