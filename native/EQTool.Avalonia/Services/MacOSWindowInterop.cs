@@ -104,9 +104,25 @@ namespace EQTool.Avalonia.Services
         // NSWorkspace reports a Wine-hosted program as "wine" with no bundle identifier,
         // so the pid is the only usable identity it offers. The Windows executable name
         // behind that pid comes from proc_name on the Core side.
+        // NSWorkspace is an AppKit class, and objc_getClass returns nil in a process
+        // that never loaded the framework. Avalonia's macOS backend loads it, so the
+        // running app is fine, but a test or console host is not and would otherwise
+        // get a silent null here.
+        private static readonly Lazy<bool> AppKitLoaded = new Lazy<bool>(() =>
+        {
+            try
+            {
+                return NativeLibrary.TryLoad("/System/Library/Frameworks/AppKit.framework/AppKit", out _);
+            }
+            catch
+            {
+                return false;
+            }
+        });
+
         public static int? TryGetFrontmostProcessId()
         {
-            if (!IsSupported)
+            if (!IsSupported || !AppKitLoaded.Value)
                 return null;
 
             var workspaceClass = objc_getClass("NSWorkspace");

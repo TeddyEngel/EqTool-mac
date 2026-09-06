@@ -186,5 +186,18 @@ namespace EQTool.Avalonia.Tests
 
             Assert.IsFalse(threw);
         }
+
+        [TestMethod]
+        public void TryGetFrontmostProcessId_ReturnsAResolvableProcess()
+        {
+            // Act
+            var pid = MacOSWindowInterop.TryGetFrontmostProcessId();
+
+            // Assert
+            Assert.IsNotNull(pid, "NSWorkspace reported no frontmost application.");
+            Assert.IsTrue(pid.Value > 0, $"Expected a real pid, got {pid.Value}.");
+            var name = EQTool.Platform.EqGameFocus.NativeProcessName(pid.Value);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(name), $"proc_name could not resolve pid {pid.Value}.");
+        }
     }
 }
