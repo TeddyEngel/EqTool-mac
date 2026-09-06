@@ -3368,3 +3368,44 @@ The command also failed silently in a second way. `git diff upstream/master`
 printed nothing because upstream's default branch is `main`, and an invalid ref
 produced empty output rather than an error. I nearly reported that emptiness as
 confirmation.
+
+### Acting on the decisions
+
+The network guard is gone. It was mine rather than upstream's, and it allowed one
+endpoint while refusing six, which quietly emptied item prices, player lookups,
+boat sharing and roll timers. `App.httpclient` is a plain `HttpClient` again, as
+upstream has it, and the guard's 28 tests went with it.
+
+Two descriptions of that upload were wrong and are now corrected in
+`mac/README.md`. It does not post "character data whose sharing setting fails to
+gate it". It posts a roster of players seen in the log, each with name, guild,
+class and level. `MapLocationSharing` has no off value and is used only by the
+SignalR map sharing, so it was never wired to this at all. Two features,
+described as one.
+
+`ShouldReopen` no longer requires a stored rect, so a first run opens windows
+rather than nothing. Upstream reopens on `Closed` alone, and I checked which
+windows rather than trusting my own summary: `App.xaml.cs` tests six, including
+Settings and Overlay, and not Console, which I had claimed.
+
+`EqLoggingEnabler` writes `Log=TRUE` after backing the file up. Upstream only
+rewrites a line that already exists, so a config without one keeps logging off;
+this appends instead.
+
+### A render test that catches two mutations out of three
+
+The button test survives having its `IsVisible` binding deleted entirely, though
+it does catch the binding being pointed at the wrong property, and catches the
+button being renamed.
+
+The reason looks like layout rather than binding. Before the state changes, that
+region has not been laid out, so the control reads as not visible whatever its
+own binding says. `RefreshLoggingState` then makes the sibling warning appear,
+the panel realises, and the button reads visible. So that half of the test is
+measuring the parent, not the binding. Switching to `IsEffectivelyVisible`
+changed nothing, which is how I know the guess about parent chains was also
+wrong.
+
+Left as it is, with a name that says what it shows. The uncaught case is a button
+that is always visible rather than only when logging is off, which is cosmetic
+next to the cases that are caught.

@@ -191,7 +191,7 @@ namespace EQTool.Avalonia.Tests
         }
 
         [TestMethod]
-        public void GeneralTab_EnableLoggingButton_AppearsOnlyWhenLoggingIsOff()
+        public void GeneralTab_EnableLoggingButton_ShowsWhenLoggingIsDetectedOff()
         {
             // Arrange
             var eqDirectory = System.IO.Path.Combine(
@@ -241,8 +241,8 @@ namespace EQTool.Avalonia.Tests
 
                 // Assert
                 Assert.IsTrue(found, "Expected a logging button on the General tab.");
-                Assert.IsFalse(visibleBefore, "It should stay hidden while no EverQuest directory is set.");
-                Assert.IsTrue(visibleAfter, "It should appear once a directory with Log=FALSE is detected.");
+                Assert.IsFalse(visibleBefore, "It should not be showing before a directory is set.");
+                Assert.IsTrue(visibleAfter, "It should show once a directory with Log=FALSE is detected.");
             }
             finally
             {
