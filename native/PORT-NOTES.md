@@ -2397,3 +2397,25 @@ Fourth test this session that passed while proving nothing, and the fourth found
 by breaking the code rather than by reading the test. Worth noting what they have
 in common: each asserted over a collection that a bug made empty or single, where
 the assertion is true and vacuous at the same time.
+
+### Auditing this session's own additions
+
+Two faults in this file were mine rather than upstream's: `Restore` written and
+never called, and a reopen entry for a window that never attached. Both have the
+same shape, something written that nothing reaches, so every member added during
+this work was checked for a caller.
+
+Twenty-one members across six files. Eighteen are reached from production code.
+Three are not: `RegexSafety.Configured`, `TypeScale.DefaultTokens` and
+`WindowPreferences.TryGetRequestedClickThrough`. All three exist so a test can
+see that something took effect, which is a real category rather than dead code,
+though it is public surface that only tests use and worth knowing about.
+
+The first pass was wrong and flagged eight. It excluded each member's own file,
+which hides every helper a class calls itself: `SendAsync` calls `IsAllowed`,
+`Apply` calls `Compute`, `Compute` calls `ScaleToken`, `ScaleToCurrent` calls
+`CurrentFactor`, `ApplyPreferencesTo` calls `TryGet`. Six false positives from
+one bad exclusion, which is the same failure as every other bad measurement here:
+the filter was written to match the expected answer rather than the question.
+
+No new dead code. The two already found and fixed were the only instances.
