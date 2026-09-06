@@ -2875,3 +2875,69 @@ That leaves the two members as dead surface rather than a gap, so they are
 removed. It is a three line deletion with no behaviour change, done for
 consistency with the member audit earlier in this session rather than because it
 fixes anything.
+
+### The startup sequence has never actually run
+
+`OnFrameworkInitializationCompleted` opens with
+
+```csharp
+if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+```
+
+and a headless unit test session never supplies that lifetime, so the whole body
+is skipped. `ShutdownMode`, `TypeScale.Apply`, `new MainWindow()`,
+`WindowManager.Adopt`, `CreateTrayIcon` and `ReopenLastSession` have never
+executed in any test. I checked that ordering earlier in this session by reading
+the file and reported it as verified, which was the wrong word for it.
+
+A second fact corroborates this rather than merely agreeing with it. No test
+calls `AppServices.Initialize`, and every test builds view models through the
+parameterised constructors. That is exactly why the real `settings.json` has
+never moved across dozens of test runs: the path that would load it is never
+reached.
+
+### Trying to run it, and failing before reaching any of my code
+
+`MacSettingsStore.DefaultCanonicalDirectory` derives from
+`Environment.GetFolderPath(SpecialFolder.UserProfile)`, which on .NET for macOS
+reads `HOME`. Verified in a console host: with `HOME` pointed at a sandbox,
+`GetFolderPath` returns the sandbox. That makes launching the built client safe
+for the real settings file, which was the reason I had refused to launch it.
+
+Both attempts died in the same place, once spawned directly and once through
+`launchctl asuser`:
+
+```
+System.InvalidOperationException: Avalonia.Native was not able to start the
+RenderTimer. Native error code is: -6661
+  at Avalonia.Native.AvaloniaNativePlatform.Initialize(...)
+  at Avalonia.AppBuilder.SetupUnsafe()
+  at EQTool.Avalonia.Program.Main(String[] args)  Program.cs:14
+```
+
+That is inside Avalonia's platform bootstrap. None of this project's code appears
+in the failing frames, and `AppBuilder.Setup` runs before
+`OnFrameworkInitializationCompleted`, so the startup body was never reached and
+this says nothing about whether it works.
+
+What it also does not establish is the opposite. I cannot tell from here whether
+`-6661` is an artifact of spawning a GUI process from a background agent with no
+Aqua session, or a real problem with running the client as a bare binary. Two
+attempts failed identically and I have no way to obtain a proper session from
+this context, so the question is open rather than answered either way.
+
+The sandbox came away holding nothing but the log file, the real `settings.json`
+stayed at 76427 bytes with an unchanged mtime, and no process was left behind.
+
+### There is no packaging for the native client
+
+Related, and worth stating plainly because I have not. `native/` contains no
+`Info.plist`, no `.app` bundle and no entitlements, and the csproj sets only
+`RuntimeIdentifier` and `SelfContained=false` with no bundling step. The only
+documented way to start it is `dotnet run --project native/EQTool.Avalonia`,
+which is a developer command. `mac/README.md` explains the Wine install in
+detail and never tells a reader how to run the native client at all.
+
+I have described this client as feature complete against upstream's window set
+for several rounds. At the code level that holds. As something a person could
+install and use, it does not, and I should have said so.
