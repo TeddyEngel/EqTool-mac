@@ -2469,9 +2469,15 @@ into the Mac build, and `ResettingTriggersRestoresBuiltInDefaults` is one of the
 41 linked upstream test files, so the semantics were already pinned and passing
 before I wrote anything. Only the button was missing.
 
-Night vision is a different matter and stays on the decision list: it writes
-gamma settings into the user's EverQuest config, which is the same question as
-writing `Log=TRUE` into `eqclient.ini`.
+Night vision is a different matter and stays on the decision list, because it
+writes into the user's EverQuest install rather than into PigParse's own
+settings.
+
+I wrote here that it "writes gamma settings into the user's EverQuest config,
+which is the same question as writing `Log=TRUE`". That was a guess from the
+feature name, and it is wrong. See "Night vision is not a settings change" near
+the end of this file: it unpacks 272 files over the EverQuest directory and has
+no revert.
 
 The one non-obvious bit of the implementation is `selected = null`. It looks
 removable, because `Rebuild()` repopulates the visible list anyway, but the
@@ -2665,3 +2671,45 @@ the endpoint question rather than standing on its own.
 The prices claim in that same list did survive checking. `ConHandler` is compiled
 and calls `GetData`, so blocking `item/postmultiple` really does remove item
 prices.
+
+### Night vision is not a settings change
+
+I have paired night vision with the `Log=TRUE` question for several rounds, on
+the grounds that both write into the user's EverQuest configuration. Reading
+`FixNightVision` in `SettingsGeneral.xaml.cs`, that is wrong:
+
+```csharp
+var fightlines = Properties.Resources.VisionFix;
+File.WriteAllBytes(src, fightlines);
+ZipFile.ExtractToDirectory(src, dst);
+CopyDirectory(dst, settings.DefaultEqDirectory);
+```
+
+`EQTool/Files/VisionFix.zip` holds 272 files and 8.1 MB unpacked: sky and water
+textures as `.dds`, plus `sky.ini`, `weather.ini` and `WaterSwap.ini`. The button
+unpacks that archive over the EverQuest install directory. It is a bulk replace
+of client resources, not a gamma value written to a config file.
+
+There is no revert. The XAML next to the button says so plainly: "If you want to
+revert, download the patch files from project1999 and apply them." The upstream
+README's "apply/revert" describes going and fetching the original patch files by
+hand.
+
+Upstream does guard it. The button checks `IsEqRunning()` first and then asks for
+confirmation. Neither changes what the operation is.
+
+So `Log=TRUE` and night vision are not one question. The first appends a line to
+a text file that the game reads. The second overwrites hundreds of the user's
+game assets with no way back inside the program. They should be decided
+separately, and I should have read the method before bundling them.
+
+### Two claims that did survive checking
+
+The twenty second figure published in `mac/README.md` is right.
+`PlayerTrackerService.cs:36` reads `new System.Timers.Timer(20000);// every 20
+seconds`, registered at `DI.cs:52` and resolved at `App.xaml.cs:412`.
+
+Upstream's own Reset Triggers confirmation reads "This will delete ALL triggers
+and folders (including any you created) and restore the built-in defaults. This
+cannot be undone." That is a modal rather than the arming checkbox I built, but
+it confirms the protection was meant to be there and was not my invention.
