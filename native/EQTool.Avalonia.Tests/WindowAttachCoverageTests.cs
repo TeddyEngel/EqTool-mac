@@ -114,12 +114,22 @@ namespace EQTool.Avalonia.Tests
                 if (!text.Contains("WindowPreferences.Attach"))
                     continue;
 
-                foreach (Match match in Regex.Matches(text, @"Attach\(this,\s*[\w\.]*?(\w+WindowState)"))
+                // Not [\w.]: five of these read the state through
+                // AppServices.Initialize().Bootstrap.Settings, and a character
+                // class without parentheses silently matches none of them,
+                // leaving one entry that is unique against nothing.
+                foreach (Match match in Regex.Matches(text, @"Attach\(this,[^;]*?(\w+WindowState)"))
                     used.Add(match.Groups[1].Value);
             }
 
             // Assert
-            Assert.AreNotEqual(0, used.Count, "No Attach calls were found, so this test is checking nothing.");
+            // Every view holding an Attach must have been matched. A count of one
+            // is what a broken pattern looks like, and it passes a uniqueness
+            // check without asserting anything.
+            var attaching = Directory.GetFiles(views, "*.axaml.cs")
+                .Count(f => File.ReadAllText(f).Contains("WindowPreferences.Attach"));
+            Assert.AreEqual(attaching, used.Count, "The pattern did not match every Attach call.");
+            Assert.IsTrue(attaching >= 6, $"Only {attaching} views attach, which is fewer than expected.");
             CollectionAssert.AllItemsAreUnique(used, "Two windows are attached to the same WindowState: " + string.Join(", ", used));
         }
     }

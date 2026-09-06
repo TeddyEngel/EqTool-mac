@@ -2375,3 +2375,25 @@ justifying. Constructing `MapWindow`, `DpsWindow`, `ConsoleWindow`,
 `AppServices.Initialize`, which opens the live settings file, so a behavioural
 version of this test would read a real configuration. The invariant is structural
 in any case: the call is either written down or it is not.
+
+### The guard for that had a decorative half
+
+The uniqueness test written alongside it asserted nothing. Making `MapWindow`
+attach to `DpsWindowState`, which is exactly the fault it exists to catch, left
+the suite green.
+
+The pattern was `Attach\(this,\s*[\w\.]*?(\w+WindowState)`. Five of the six
+windows reach their state through `AppServices.Initialize().Bootstrap.Settings`,
+and a character class of word characters and dots cannot cross the parentheses in
+`Initialize()`. So the pattern matched one view, the overlay, and a single-item
+list is unique against nothing. The count assertion underneath it, that at least
+one match existed, was satisfied by that same lone entry.
+
+It now matches up to the semicolon, and the count is compared against the number
+of views that contain an `Attach` at all, so a pattern that stops matching fails
+rather than quietly narrowing. With that, the mutation fails the test.
+
+Fourth test this session that passed while proving nothing, and the fourth found
+by breaking the code rather than by reading the test. Worth noting what they have
+in common: each asserted over a collection that a bug made empty or single, where
+the assertion is true and vacuous at the same time.
