@@ -39,10 +39,10 @@ watched this build draw a window on a real display, because the environment it
 was developed in cannot start a graphical application at all. If it fails to
 launch, that is the first thing to report.
 
-It also behaves differently from the Wine build on the network. It permits the
-mob info wiki lookup and refuses every other call to the service, so item
-prices, player lookups, boat sharing and roll timers come back empty. The
-section below describes what the Wine build does instead.
+On the network it behaves as the Windows client does, so item prices, player
+lookups, boat sharing and roll timers all work. One thing it does not do is
+report your coordinates when you con something, because the service responsible
+for that is not compiled into it. The section below covers the rest.
 
 ## Current status, running under Wine
 
@@ -69,10 +69,16 @@ Windows. Several of those things happen on their own, and the interface announce
 none of them.
 
 The program starts a twenty second timer when it launches, and once it has read
-enough of the log to know which server you are on, each tick posts character data
-to `pigparse.azurewebsites.net`. The location sharing setting does not decide
-whether that request goes out. It rides inside the request as a field, and the
-request is sent either way.
+enough of the log to know which server you are on, each tick posts a roster of
+the players it has seen in your log to `pigparse.azurewebsites.net`. Each entry
+carries a name, guild, class and level, and the request carries your server. Your
+own character is in that roster like anyone else you have seen.
+
+Nothing turns that off. An earlier version of this file said the location sharing
+setting failed to gate it, which was wrong in a way worth correcting: that
+setting belongs to the separate real-time map sharing, which goes over SignalR
+and does carry it. The roster upload never consults it. They are two features,
+and the setting was never connected to this one.
 
 Conning something sends more than the con. The mob info lookup posts the mob name
 and your current zone, which is what fills the window in. A separate service posts
@@ -105,12 +111,14 @@ upstream user. `spike/WINE-FINDINGS.md` describes what it does when it runs.
 Changing that would mean shipping a fork build rather than upstream's, which is a
 larger change than it sounds and has not been made.
 
-The native client in `native/` blocks almost all of it. It allows the mob info
-wiki lookup and refuses the other six endpoints its code can reach, so item
-prices, player lookups, boat sharing and roll timers come back empty instead of
-failing. The service that reports your coordinates is not built into it at all.
-That guard does not apply here, because the Wine path runs the upstream binary
-instead of the native code.
+The native client sends the same things, with one exception. The service that
+posts your coordinates when you con something is not compiled into it, so that
+particular call never happens there. Everything else, the roster upload
+included, behaves as it does here.
+
+An earlier version of this file described the native client as blocking almost
+all of this. It did, because of a guard I added, and that guard has been removed
+so the two clients now agree.
 
 All of this comes from reading the code rather than watching the traffic.
 
