@@ -22,9 +22,16 @@ command -v lipo >/dev/null 2>&1 || die "lipo is missing. Install the Xcode comma
 command -v iconutil >/dev/null 2>&1 || die "iconutil is missing. Install the Xcode command line tools: xcode-select --install"
 [[ -f "$PROJECT" ]] || die "Cannot find $PROJECT"
 
-VERSION="$(cd "$REPO_ROOT" && git describe --tags --always 2>/dev/null || echo "0.0.0")"
+BUILD_ID="$(cd "$REPO_ROOT" && git describe --tags --always --dirty 2>/dev/null || echo "unknown")"
 
-say "Building $APP_NAME.app  (version $VERSION)"
+# CFBundleShortVersionString has to be dotted numbers. git describe returns a
+# bare commit hash when no tag is reachable, which it is not, and this fork
+# carries no tags of its own. Requiring a dot stops a hash like 76bda8ce being
+# read as version 76.
+SHORT_VERSION="$(printf '%s' "$BUILD_ID" | sed -n 's/^v\{0,1\}\([0-9][0-9]*\(\.[0-9][0-9]*\)\{1,\}\).*/\1/p')"
+[[ -n "$SHORT_VERSION" ]] || SHORT_VERSION="0.0.0"
+
+say "Building $APP_NAME.app  (version $SHORT_VERSION, build $BUILD_ID)"
 
 # Published without a runtime identifier on purpose. That keeps
 # EQTool.Avalonia.dll AnyCPU so it loads in both an x86_64 and an arm64
@@ -80,8 +87,8 @@ cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
     <key>CFBundleExecutable</key><string>$EXECUTABLE_NAME</string>
     <key>CFBundleIconFile</key><string>$APP_NAME</string>
     <key>CFBundlePackageType</key><string>APPL</string>
-    <key>CFBundleShortVersionString</key><string>$VERSION</string>
-    <key>CFBundleVersion</key><string>$VERSION</string>
+    <key>CFBundleShortVersionString</key><string>$SHORT_VERSION</string>
+    <key>CFBundleVersion</key><string>$BUILD_ID</string>
     <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
     <key>LSMinimumSystemVersion</key><string>11.0</string>
     <key>LSApplicationCategoryType</key><string>public.app-category.utilities</string>
