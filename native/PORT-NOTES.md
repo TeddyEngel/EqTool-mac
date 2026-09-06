@@ -3153,3 +3153,39 @@ that sounded right and was not checked, and the one cheap experiment settled it
 in under a minute. And the pin is a workaround: `EQTool.Core` genuinely does not
 compile on newer SDKs, and choosing which `Reverse` was meant is an upstream
 semantics question rather than a cleanup I should make quietly.
+
+### Pinning down what the Reverse actually changes
+
+I filed that as undecidable without the user. Most of it turned out measurable.
+
+`EQTool` and `EQToolShared` both target `v4.8`, where `MemoryExtensions.Reverse`
+does not exist, so `splits.Reverse()` binds to `Enumerable.Reverse` with no
+ambiguity and the discarded result leaves the array alone. Whatever the author
+meant, the shipped product has never reversed anything.
+
+The intent is visible in the surrounding code. `splits` is capped at two tokens
+by the early return above it, and the loop below takes the first token of three
+or more characters. Reversing would make it take the last one. The `_ =` silenced
+the warning that would have pointed at this years ago.
+
+My next guess was that upstream's own tests pin the current behaviour. They do
+not. Replacing the line with `System.Array.Reverse(splits)` leaves all 34 tests
+in `CompleteHealCommsHandlerTests` passing, because every input they use has a
+single token recipient: Wreckognize, Beefwich, name. The divergence needs exactly
+two tokens, both three characters or longer, which no test produces.
+
+Constructing that case shows the difference concretely:
+
+```
+Curaja shouts, 'GG 014 CH -- Bob Smith'
+
+today            Recipient = Bob      3 chars
+in-place reverse Recipient = Smith    5 chars
+```
+
+So the decision is real but narrow, and it is now specific rather than abstract.
+It changes which word becomes the CH recipient when the parsed target has two
+qualifying tokens. Whether real logs produce that, I have not established and
+should not guess.
+
+The handler was restored byte for byte afterwards and the probe deleted.
