@@ -141,7 +141,7 @@ namespace EQTool.Services.Parsing
                     {
                         return null;
                     }
-                    _ = splits.Reverse();
+                    _ = Enumerable.Reverse(splits);
                     foreach (var item in splits)
                     {
                         if (item?.Length >= 3)
