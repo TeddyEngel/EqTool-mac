@@ -72,9 +72,14 @@ jobs:
       # semantics. Path.GetFileName does not treat a backslash as a separator on
       # Unix, so C:\Everquest never splits and they cannot pass on macOS. The
       # remaining 494 are the ones that mean anything here.
+      # working-directory matters here. global.json is resolved from the current
+      # directory rather than the project path, so running this from the repo
+      # root would silently ignore native/global.json and pick the newest SDK
+      # on the image.
       - name: Test EQTool.Core
+        working-directory: native
         run: >
-          dotnet test native/EQTool.Core.Tests/EQTool.Core.Tests.csproj
+          dotnet test EQTool.Core.Tests/EQTool.Core.Tests.csproj
           -c Release --verbosity minimal
           --filter "FullyQualifiedName!~SimplePathCombineTests&FullyQualifiedName!~ProgramPathCombineTests&FullyQualifiedName!~DirectoryCombineTests&FullyQualifiedName!~ParsesFullPath"
 
@@ -94,7 +99,9 @@ jobs:
           dotnet-version: 9.0.102
 
       - name: Build native client
-        run: dotnet build native/EQTool.Avalonia/EQTool.Avalonia.csproj -c Release --no-incremental
+        working-directory: native
+        run: dotnet build EQTool.Avalonia/EQTool.Avalonia.csproj -c Release --no-incremental
 
       - name: Test EQTool.Avalonia
-        run: dotnet test native/EQTool.Avalonia.Tests/EQTool.Avalonia.Tests.csproj -c Release --verbosity minimal
+        working-directory: native
+        run: dotnet test EQTool.Avalonia.Tests/EQTool.Avalonia.Tests.csproj -c Release --verbosity minimal
