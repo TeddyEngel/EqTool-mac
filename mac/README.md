@@ -55,9 +55,15 @@ None of this is a fault in the macOS packaging. Windows users get all of it. It 
 written down here because the sharing setting reads as though it decides what
 leaves your machine, and it decides very little of it.
 
-This build changes one thing: the updater is switched off. It fetches Windows
-release archives, and there is no macOS release for it to find.
-`spike/WINE-FINDINGS.md` has the details.
+The updater is not switched off here, and an earlier version of this file said it
+was. The installer downloads upstream's `EQTool_Linux` release from
+`smasherprog/EqTool`. This fork's guard lives behind `#if MACOS`, which only the
+`Mac` build configuration defines, and the installer does not use that build. So
+the updater in the binary you install behaves the way it does for any other
+upstream user. `spike/WINE-FINDINGS.md` describes what it does when it runs.
+
+Changing that would mean shipping a fork build rather than upstream's, which is a
+larger change than it sounds and has not been made.
 
 The native client in `native/` blocks almost all of it. It allows the mob info
 wiki lookup and refuses the other six endpoints its code can reach, so item

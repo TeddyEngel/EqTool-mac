@@ -2713,3 +2713,49 @@ Upstream's own Reset Triggers confirmation reads "This will delete ALL triggers
 and folders (including any you created) and restore the built-in defaults. This
 cannot be undone." That is a modal rather than the arming checkbox I built, but
 it confirms the protection was meant to be there and was not my invention.
+
+### The Wine path does not run this fork at all
+
+Six rounds of decision (a) have been phrased as "guard `PlayerTrackerService`,
+`LoggingService` and `ZoneActivityTrackingService` under `#if MACOS`, the way the
+updater is guarded." That cannot work, and the reason is in the installer:
+
+```
+mac/install.command:33    GITHUB_REPO="smasherprog/EqTool"
+mac/install.command:161   ZIP_NAME="EQTool_Linux${RESOLVED_VERSION}.zip"
+EQTool.csproj:137         Linux|AnyCPU  ->  TRACE;RELEASE;LINUX
+EQTool.csproj:148         Mac|AnyCPU    ->  TRACE;RELEASE;LINUX;MACOS
+```
+
+The installer downloads upstream's Linux release and unzips it into
+`drive_c/PigParse`. There is no patch step afterwards, and nothing in the script
+mentions `bin/Mac` or a local build. That release is compiled with
+`Configuration=Linux`, which defines `LINUX` and not `MACOS`, so every `#if
+MACOS` guard in this fork is absent from the binary people actually install.
+
+`.github/workflows/mac-build.yml` builds the Mac configuration and uploads it
+with `actions/upload-artifact`. It is never published as a release, so nothing
+consumes it.
+
+Two consequences. Adding `#if MACOS` guards for the privacy question would change
+nothing under Wine, so that decision has to be rephrased around shipping a fork
+build instead of upstream's. And `mac/README.md` said "This build changes one
+thing: the updater is switched off", which was false for what the installer puts
+on disk. That line is now corrected.
+
+Worth separating the blame here. `mac/spike/MACBUILD-FINDINGS.md:166` says the
+*Mac build* has the update entry points hard-guarded, which is true and properly
+scoped. The error was in the README summary, which dropped the scope and turned a
+statement about one build configuration into a statement about what users run.
+That is the same failure as the 28-test summary from the previous round: the
+detailed note was careful and the summary was not.
+
+On disk, the installed binary is 31,125,808 bytes while the two Mac-configuration
+builds left over from spike work are byte-identical to each other at 31,109,632.
+Different builds, which matches the source reading.
+
+One method note. I first tried to tell the binaries apart by grepping them for a
+distinctive comment from the guarded method. Every one returned zero, which is
+meaningless: comments do not survive compilation. A probe that cannot distinguish
+the hypotheses is not weak evidence, it is no evidence, and it nearly went into
+the writeup as though it were.
