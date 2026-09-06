@@ -2606,3 +2606,62 @@ guard stops them.
 The README section is now written from this inventory rather than from memory.
 The caveat at the end of it still stands: this is all read out of the code, not
 watched on the wire.
+
+### What I flattened when reporting the 28 failures
+
+Every status report this session has said "27 are inert Windows path artifacts,
+and the 28th, `UIFileNameTests.ParsesFullPath`, is a precondition on UI file
+sync." The earlier section above says something more careful than that, and I
+compressed it into something misleading.
+
+What that section actually says is that the twenty-eighth covers a name parser
+rather than a path helper, and that it is "inert as things stand" because
+`UIFileSyncService` is not linked in. The precondition is conditional on that
+service being wired up. My reports dropped the condition and presented it as a
+live blocker, which made one inert test sound like pending work.
+
+Mechanically all 28 fail for one reason. `UIFileName.TryParse` calls
+`Path.GetFileName` and the test hands it `C:\Everquest\UI_Pigy_P1999Green.ini`:
+
+```
+GetFileName("C:\Everquest\UI_Pigy_P1999Green.ini")   'C:\Everquest\UI_Pigy_P1999Green.ini'   UI_ prefix: False
+GetFileName("/Users/someone/.../UI_Pigy_P1999Green.ini")  'UI_Pigy_P1999Green.ini'           UI_ prefix: True
+```
+
+Backslash is not a separator on Unix, and it is a legal filename character, so
+`Path.GetFileName` is right to return the whole string. `TryParse` then fails the
+`UI_` prefix check. Given a real macOS path it parses correctly. So this is the
+same Windows-path artifact as the other 27, not a separate class.
+
+There is also nothing downstream of it. `UIFileSyncService` is not compiled into
+the Mac build, so the call sites I said needed routing through
+`MacPathNormalizer` are in code the native client never runs.
+
+No fix follows from this. Teaching `TryParse` to split on backslash would mean
+editing a shared upstream file, and it would be wrong on Unix regardless. The
+number to report is 28 inert upstream tests asserting Windows path semantics.
+
+### Three of the four blocked features do not exist here
+
+Decision (d) has been listed for several rounds as "location sharing, Discord
+login, inventory sync and UI file sync need a real send-gate built before they
+could be enabled." Checking the built assembly instead of trusting the list:
+
+```
+InventoryWatcherService   absent
+UIFileSyncService         absent
+DiscordService            absent
+PlayerTrackerService      PRESENT
+```
+
+Inventory sync, UI file sync and Discord login are not in the native client at
+all. There is nothing to enable and no gate to build. They run only on the Wine
+path, where they are upstream code and already covered by the Wine question.
+
+What is left of (d) is location sharing through `PlayerTrackerService`, which is
+compiled and blocked by the guard at `player/upsertplayers`, so it belongs with
+the endpoint question rather than standing on its own.
+
+The prices claim in that same list did survive checking. `ConHandler` is compiled
+and calls `GetData`, so blocking `item/postmultiple` really does remove item
+prices.
