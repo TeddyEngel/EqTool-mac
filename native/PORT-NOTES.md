@@ -3326,3 +3326,45 @@ One thing still unverified, and unverifiable here. Headless does not load
 `libAvaloniaNative`, so whether it resolves from `runtimes/osx/native` under the
 real platform is untested, and no GUI application starts in this environment. It
 is one line to put the pin back.
+
+### The additive-only claim was measured with the wrong command
+
+Nearly every status report this session said upstream was untouched, on the
+strength of this:
+
+```
+git diff --stat HEAD -- EQTool EQToolShared EQtoolsTests EqTool.sln LICENSE
+```
+
+That compares the working tree against `HEAD`. It answers "do I have uncommitted
+edits to upstream files", which is not the question I was using it for. Against
+upstream itself the fork modifies thirteen files:
+
+```
+EQTool/App.xaml.cs                                    +2
+EQTool/EQTool.csproj                                 +13 -1
+EQTool/Models/EQToolSettings.cs                       +1
+EQTool/Services/Handlers/CompleteHealCommsHandler.cs  +1 -1
+EQTool/Services/UpdateRunner.cs                       +5
+EQTool/Services/UpdateService.cs                     +15
+EQTool/Services/WindowExtensions.cs                   +3
+EQTool/UI/BaseSaveStateWindow.cs                     +17
+EQTool/UI/EventOverlay.xaml.cs                        +2
+EQTool/UI/SettingsComponents/SettingsGeneral.xaml     +4
+EQTool/UI/SpellWindow.xaml.cs                         +2
+EQTool/ViewModels/SettingsWindowViewModel.cs         +10
+EQToolShared/EQToolShared.csproj                      +9
+```
+
+Twelve date from 2026-09-04 and are the fork's own Mac work: the Mac build
+configuration, overlay click-through wiring, the updater guards, the settings
+property behind them. One is from today, the explicit `Enumerable.Reverse`.
+
+So the work in this session was additive until today, and that part holds. What
+was wrong is the description of the baseline. I inherited twelve upstream
+modifications and kept calling them two.
+
+The command also failed silently in a second way. `git diff upstream/master`
+printed nothing because upstream's default branch is `main`, and an invalid ref
+produced empty output rather than an error. I nearly reported that emptiness as
+confirmation.
