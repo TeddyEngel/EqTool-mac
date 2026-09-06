@@ -83,6 +83,36 @@ jobs:
           -c Release --verbosity minimal
           --filter "FullyQualifiedName!~SimplePathCombineTests&FullyQualifiedName!~ProgramPathCombineTests&FullyQualifiedName!~DirectoryCombineTests&FullyQualifiedName!~ParsesFullPath"
 
+  package:
+    runs-on: macos-14
+    steps:
+      # The build script derives its version from git describe, which needs
+      # more than the default shallow checkout.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.102
+
+      - name: Build PigParse.app
+        run: ./mac/build-app.command
+
+      # ditto rather than zip, so the executable bit on the launcher and the
+      # bundle's symlinks survive the round trip through the artifact store.
+      - name: Archive the bundle
+        run: ditto -c -k --keepParent dist/PigParse.app dist/PigParse-mac-universal.zip
+
+      - name: Upload PigParse.app
+        uses: actions/upload-artifact@v4
+        with:
+          name: PigParse-mac-universal
+          path: dist/PigParse-mac-universal.zip
+          if-no-files-found: error
+
   native-client:
     runs-on: macos-14
     steps:

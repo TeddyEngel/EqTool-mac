@@ -1,10 +1,50 @@
 # PigParse on macOS
 
 PigParse parses your EverQuest log file to show spell timers, triggers, DPS
-meters, and maps while you play on Project 1999 or Quarm. This directory
-maintains macOS support for running it under Wine.
+meters, and maps while you play on Project 1999 or Quarm.
 
-## Current status
+There are two ways to run it on a Mac. A native build, `PigParse.app`, which
+needs no Wine and is described immediately below. And the original Windows
+build under Wine, which the rest of this file covers and which is the more
+proven of the two.
+
+## PigParse.app, the native build
+
+A normal macOS application. Universal, so it runs on Apple Silicon and Intel
+without Rosetta.
+
+Get it one of two ways.
+
+Download it from the `PigParse-mac-universal` artifact on any green run of the
+`mac-build` workflow, unzip, and drag `PigParse.app` wherever you keep
+applications.
+
+Or build it yourself, which takes a couple of minutes and needs the .NET 9 SDK
+and the Xcode command line tools:
+
+```
+./mac/build-app.command
+```
+
+That writes `dist/PigParse.app`, around 47 MB.
+
+The bundle is not signed or notarized, so macOS refuses the first launch.
+Right click it, choose Open, and confirm. That is needed once, after which it
+opens normally.
+
+Be aware of what has not been checked. The automated suites pass on both
+architectures, 162 interface tests and 494 parsing and platform tests on every
+push, and the startup path has been exercised end to end. But nobody has yet
+watched this build draw a window on a real display, because the environment it
+was developed in cannot start a graphical application at all. If it fails to
+launch, that is the first thing to report.
+
+It also behaves differently from the Wine build on the network. It permits the
+mob info wiki lookup and refuses every other call to the service, so item
+prices, player lookups, boat sharing and roll timers come back empty. The
+section below describes what the Wine build does instead.
+
+## Current status, running under Wine
 
 The application runs under Wine on macOS. It installs, launches, renders its
 interface, reads a log file, and draws its overlays above other Wine windows.
