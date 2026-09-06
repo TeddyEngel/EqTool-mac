@@ -2550,3 +2550,59 @@ parser down.
 The sibling mutation, dropping `frontmost.Value <= 0`, did get pinned once
 `IsFocused_WhenTheFrontmostPidIsNotReal_IsFalse` fed it a resolver that would
 have answered `eqgame.exe` for pid 0.
+
+### I had been describing the network surface from memory
+
+Every round I have framed the outstanding privacy decisions around three or four
+endpoints. Counting them properly, upstream calls fourteen:
+
+```
+api/boat/seen              api/item/postmultiple      api/rolltimer/timers
+api/boat/serverActivity    api/item/wiki              api/secured/test
+api/eqtool/exception       api/player/getbynames      api/uifile/delete
+api/inventory/profile      api/player/upsertplayers   api/uifile/list
+api/inventory/upload                                  api/uifile/upload
+```
+
+A plain grep for the paths finds only the two `uifile` ones, because the rest are
+built by interpolation. That is why the list looked short for so long.
+
+Seven are reachable from compiled Mac code, six through `PigParseApi` and one
+through `WikiApi`. The guard allows `api/item/wiki` and blocks the other six, so
+item prices, player lookups, boat sharing and roll timers are all off in the
+native client. I had disclosed two of those six.
+
+Two things I checked rather than assumed. `WikiApi` builds a clean POST with no
+path segments and no query string, so `AbsolutePath` matches the allowlist
+exactly and mob info really does still work. And every blocked caller tests
+`StatusCode == OK` inside a `try` with an empty `catch`, returning an empty
+collection, so a 403 degrades quietly instead of throwing into the log parser.
+
+### Conning something reports where you are
+
+`ZoneActivityTrackingService.LogParser_ConEvent` posts `NPCData` on every con:
+
+```csharp
+LocX = LastLocation.HasValue ? LastLocation.Value.X : (double?)null,
+LocY = LastLocation.HasValue ? LastLocation.Value.Y : (double?)null,
+Zone = activePlayer.Player.Zone,
+Name = e.Name
+```
+
+`LastLocation` comes from `LogParser_PlayerLocationEvent`, so those are the
+coordinates from the last `/loc` you typed. The only guard is
+`activePlayer.Player?.Server == null`. Deaths take the same path with `IsDeath`.
+
+This matters for two claims I had made. The Wine disclosure in `mac/README.md`
+named the twenty second character upload and the exception posts and said those
+were the two worth knowing, which read as though the list was complete. And I had
+been asking whether the wiki call's *zone* disclosure was acceptable while the
+same keypress also sends coordinates through a different service.
+
+The class is not compiled into the native client, so this is a Wine-path finding
+only. `BoatHandler`, `QuakeHandler` and `FTEHandler` are compiled, and only the
+guard stops them.
+
+The README section is now written from this inventory rather than from memory.
+The caveat at the end of it still stands: this is all read out of the code, not
+watched on the wire.
