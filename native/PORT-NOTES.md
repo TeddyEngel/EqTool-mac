@@ -2941,3 +2941,69 @@ detail and never tells a reader how to run the native client at all.
 I have described this client as feature complete against upstream's window set
 for several rounds. At the code level that holds. As something a person could
 install and use, it does not, and I should have said so.
+
+### The startup body does run, and "blocked" was wrong again
+
+I recorded the previous round as blocked on getting a GUI session. That was the
+third time I have used that word wrongly in this session, after `IsEqGameFocused`
+and the Wine name lookup.
+
+The `-6661` failure was in `AvaloniaNativePlatform.Initialize`, which is the
+native platform and needs a render timer. The startup body is gated on the
+*lifetime*, not the platform, and `AppBuilder` lets you supply one. Headless
+platform plus a real `ClassicDesktopStyleApplicationLifetime` runs it with no
+display involved:
+
+```
+RESULT: startup body completed without throwing
+MainWindow set   : True
+ShutdownMode     : OnExplicitShutdown
+settings dir created: True
+```
+
+`MainWindow set` means lines 37 and 38 executed, `ShutdownMode` means line 31
+did, so the lifetime guard passed and the body ran to the end. Nothing threw, so
+`TypeScale.Apply`, `new MainWindow()`, `WindowManager.Adopt`, `CreateTrayIcon`
+and `ReopenLastSession` all completed. `CreateTrayIcon` was the one I expected to
+need a real platform, and it does not.
+
+The settings directory appearing under the sandboxed `HOME` is the useful part.
+It only gets created through `SettingsBootstrap.Load`, so `AppServices.Initialize`
+ran, which means the container built and `LogParser`, `TriggerTimerManager` and
+`LogArchiveService` all constructed. No file was written, which fits: nothing
+saves until a window closes.
+
+This says nothing about the native platform. Whether the client starts as a bare
+binary on a real display is still open, and is a separate question from whether
+the startup sequence is correct.
+
+### Why this cannot become an ordinary test
+
+The obvious follow-up is to put that in the suite. It cannot go there safely.
+
+```
+real HOME  : /Users/teddyengel
+after set  : (empty)
+env reads  : /tmp/inproc-sandbox
+```
+
+`Environment.SetEnvironmentVariable("HOME", ...)` changes what
+`GetEnvironmentVariable` returns but leaves `GetFolderPath(UserProfile)` empty
+rather than following it. `DefaultCanonicalDirectory` would then build the
+relative path `Library/Application Support/PigParse` and write into the test
+working directory.
+
+Without a sandbox, `AppServices.Initialize` reads the real `settings.json` and
+installs `WindowPreferences.Persist` against the real loader, so any later window
+close in the same run would write the user's file. The redirect only works when
+`HOME` is set before the process starts.
+
+So the recipe is recorded here rather than added to the suite. A console host
+referencing `EQTool.Avalonia`, `AppBuilder.Configure<App>().UseHeadless(...)
+.SetupWithLifetime(new ClassicDesktopStyleApplicationLifetime())`, run with
+`HOME` pointed somewhere disposable. That reproduces the check in a couple of
+minutes and cannot touch real settings.
+
+One smaller correction while I was in there. These notes have listed
+`WindowManager.OpenWindows` among its public surface for most of the session. It
+is `private static readonly`, and the compiler said so.
