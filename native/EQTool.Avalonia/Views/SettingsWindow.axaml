@@ -143,6 +143,22 @@
               <TextBlock Grid.Column="2" Classes="value" Text="{Binding LogArchiveSizeMB, StringFormat='{}{0} MB'}" Width="60" />
             </Grid>
 
+            <TextBlock Classes="section" Text="TRIGGERS" />
+
+            <CheckBox IsChecked="{Binding TriggerEditor.ResetArmed}"
+                      Content="Let me reset every trigger to the built-in defaults" />
+
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Classes="ghost"
+                      IsEnabled="{Binding TriggerEditor.ResetArmed}"
+                      Click="OnResetTriggersClicked"
+                      Content="Reset Triggers" />
+              <TextBlock Classes="label"
+                         VerticalAlignment="Center"
+                         TextWrapping="Wrap"
+                         Text="Deletes all triggers and folders, including any you created." />
+            </StackPanel>
+
           </StackPanel>
         </ScrollViewer>
       </TabItem>

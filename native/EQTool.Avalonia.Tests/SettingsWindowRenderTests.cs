@@ -189,5 +189,57 @@ namespace EQTool.Avalonia.Tests
                 new[] { "Timers", "Map", "DPS", "Mob Info", "Console", "Overlay" },
                 labels.ToArray());
         }
+
+        [TestMethod]
+        public void GeneralTab_ResetTriggersButton_TracksTheArmedFlag()
+        {
+            // Arrange
+            var settings = new EQToolSettings
+            {
+                Triggers = new List<Trigger>
+                {
+                    new Trigger { TriggerName = "My Pull", SearchText = "pulling now", Category = "Default" }
+                }
+            };
+            var triggerEditor = new TriggerEditorViewModel(
+                settings,
+                () => { },
+                new RecordingTextToSpeach(),
+                new RecordingAudioService());
+            var viewModel = new SettingsWindowViewModel(settings, () => { }, new RecordingTextToSpeach(), triggerEditor);
+
+            var found = false;
+            var enabledBeforeArming = true;
+            var enabledAfterArming = false;
+
+            // Act
+            session.Dispatch(() =>
+            {
+                var window = new SettingsWindow(viewModel);
+                window.Show();
+                window.UpdateLayout();
+
+                var button = window
+                    .GetVisualDescendants()
+                    .OfType<Button>()
+                    .FirstOrDefault(a => (a.Content as string) == "Reset Triggers");
+
+                found = button != null;
+                if (button != null)
+                {
+                    enabledBeforeArming = button.IsEnabled;
+                    triggerEditor.ResetArmed = true;
+                    window.UpdateLayout();
+                    enabledAfterArming = button.IsEnabled;
+                }
+
+                window.Close();
+            }, CancellationToken.None).GetAwaiter().GetResult();
+
+            // Assert
+            Assert.IsTrue(found, "Expected a Reset Triggers button on the General tab.");
+            Assert.IsFalse(enabledBeforeArming, "Reset should stay disabled until it is armed.");
+            Assert.IsTrue(enabledAfterArming, "Arming the reset should enable the button.");
+        }
     }
 }

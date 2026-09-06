@@ -48,6 +48,11 @@ namespace EQTool.Avalonia.Views
             viewModel.TriggerEditor.PreviewOutput();
         }
 
+        private void OnResetTriggersClicked(object sender, RoutedEventArgs e)
+        {
+            viewModel.TriggerEditor.ResetToDefaults();
+        }
+
         private void InitializeComponent()
         {
             AvaloniaXamlLoader.Load(this);
