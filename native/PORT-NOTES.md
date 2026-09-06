@@ -2450,3 +2450,45 @@ codebase: `Avalonia.Controls.WindowState` and `EQTool.Models.WindowState` are
 different types sharing a name, and restoring the field means assigning between
 two same-named enums. `WindowPreferences` already qualifies its parameter for
 that reason.
+
+### Reset Triggers was mislabelled as a WPF port
+
+I carried "night vision fix and Reset Triggers" as one optional item for several
+rounds, on the grounds that both live in the uncompiled WPF
+`SettingsGeneral.xaml.cs`. That was wrong for the second one. The reset itself is
+three lines, and upstream's own test spells them out:
+
+```csharp
+settings.Triggers = new List<Trigger>();
+settings.TriggerFolders = new List<TriggerFolder>();
+_ = EQToolSettingsLoad.SyncBuiltInTriggers(settings);
+```
+
+`SyncBuiltInTriggers` is public static on `EQToolSettingsLoad`, which is compiled
+into the Mac build, and `ResettingTriggersRestoresBuiltInDefaults` is one of the
+41 linked upstream test files, so the semantics were already pinned and passing
+before I wrote anything. Only the button was missing.
+
+Night vision is a different matter and stays on the decision list: it writes
+gamma settings into the user's EverQuest config, which is the same question as
+writing `Log=TRUE` into `eqclient.ini`.
+
+The one non-obvious bit of the implementation is `selected = null`. It looks
+removable, because `Rebuild()` repopulates the visible list anyway, but the
+selection holds a `Trigger` that reset has just discarded, so dropping it leaves
+the detail pane bound to an object no longer in settings.
+
+### Mistyped binding paths do not survive the build
+
+I justified the render test on the assumption that a typo in a binding path fails
+silently at runtime. That is the WPF behaviour, and it is the bug class this port
+has produced twice already, so it sounded right. It is false here.
+
+Mutating `TriggerEditor.ResetArmed` to `ResetArmd`, in the `CheckBox` `IsChecked`
+and again in the `Button` `IsEnabled`, broke the build both times rather than
+failing a test. Compiled bindings resolve paths at compile time in this project.
+
+The render test still pays for itself, but for structural changes rather than
+typos. Removing the `IsEnabled` attribute and renaming the button both compile
+cleanly and both were caught. The commit message on `249a9f7b` overstates its
+purpose and should be read against this entry.
