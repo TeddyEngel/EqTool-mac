@@ -58,10 +58,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Pinned exactly. On a newer 9.0.x SDK, EQTool.Core fails to compile:
+      # CompleteHealCommsHandler.cs line 144 is `_ = splits.Reverse()` on a
+      # string[], which binds to a void returning overload there and to
+      # Enumerable.Reverse here. See PORT-NOTES, the two have different
+      # behaviour as well as different return types.
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 9.0.x
+          dotnet-version: 9.0.102
 
       # The excluded classes are upstream tests that assert Windows path
       # semantics. Path.GetFileName does not treat a backslash as a separator on
@@ -86,7 +91,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 9.0.x
+          dotnet-version: 9.0.102
 
       - name: Build native client
         run: dotnet build native/EQTool.Avalonia/EQTool.Avalonia.csproj -c Release --no-incremental
