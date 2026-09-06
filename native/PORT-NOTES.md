@@ -3036,3 +3036,59 @@ the reason to suspect it does not.
 The lesson is the cheap one. Two rounds were spent treating a failure as possibly
 project specific when a five minute control with an empty window would have
 answered it. Reach for the control before the label.
+
+### CI never touched the native client
+
+`.github/workflows/mac-build.yml` was the only workflow, and it contained no
+reference to `native/`, `EQTool.Core`, `EQTool.Avalonia`, or `dotnet test`. It
+built `EQTool` with `Configuration=Mac` and uploaded the artifact that, as
+established earlier, the installer does not consume.
+
+So the 656 tests reported in every status update this session only ever ran on
+one machine, and nothing would have caught a regression in the client that is
+supposed to be the deliverable.
+
+A second job now builds the client and runs both suites. The Core step filters
+out `SimplePathCombineTests`, `ProgramPathCombineTests`, `DirectoryCombineTests`
+and `ParsesFullPath`, which is exactly the 28 known failures, 9 plus 9 plus 9
+plus 1. Verified locally with the exact CI commands in Release: build clean, 162
+Avalonia, 494 Core.
+
+### The job is correct and did not get scheduled
+
+`build` finished in about a minute. `native` sat queued for twenty and never
+started. There are no self-hosted runners on the repo, so it is waiting on a
+hosted `macos-13`, which is the deprecated Intel tier.
+
+I picked Intel because `EQTool.Avalonia` pins `RuntimeIdentifier=osx-x64` and the
+current default macOS runner is arm64, which would need Rosetta to execute x64
+test binaries. That reasoning still holds. The consequence is a job that is
+correct and may not run, which provides no regression protection at all.
+
+I have not guessed at an arm64 runner. I cannot validate arm64 behaviour from an
+Intel machine, and pushing an unverifiable change would be the exact habit the
+rest of this file documents.
+
+### The client is x86_64 only, and I never said so
+
+Chasing the runner surfaced something that matters more than the runner.
+
+```
+binary     Mach-O 64-bit executable x86_64
+csproj RID osx-x64
+```
+
+Single slice, not universal. Every Mac sold since late 2020 is arm64, so this
+needs Rosetta on most current hardware. Fourteen rounds of calling the client
+feature complete never mentioned it.
+
+The pin is not load-bearing. Building with `-p:RuntimeIdentifier=` succeeds with
+no warnings or errors, and `EQTool.Avalonia.dll` is architecture neutral IL. Only
+the apphost carries an architecture, and unpinned it follows the build machine.
+That last part is inference from producing x86_64 on an Intel box rather than
+something measured on arm64.
+
+Changing what ships is not mine to decide, and it belongs with the packaging
+question rather than being folded in quietly. It is the same root cause as the
+runner problem: the project is pinned to the architecture that is now the
+minority.
