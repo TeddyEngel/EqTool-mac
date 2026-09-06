@@ -2759,3 +2759,32 @@ distinctive comment from the guarded method. Every one returned zero, which is
 meaningless: comments do not survive compilation. A probe that cannot distinguish
 the hypotheses is not weak evidence, it is no evidence, and it nearly went into
 the writeup as though it were.
+
+### Following that through, and stopping short of the wrong verdict
+
+The natural next question is whether the two guarded files reach the native
+client either. They do not. `EQTool.Core.csproj` takes `EQToolShared` whole, then
+only `EQTool/Services/Parsing/**` and `EQTool/Services/Handlers/**`.
+`UpdateRunner.cs` and `UpdateService.cs` sit directly in `EQTool/Services/`, so
+neither is compiled, and both types are absent from the built assembly.
+
+Put beside the installer finding, that means the only two upstream files this
+fork modifies are inactive in both shipping paths. `MACOS` is undefined in the
+build Wine installs, and the native client never compiles the files at all.
+
+"Dead code" is the wrong conclusion, and I nearly wrote it. `MACBUILD-FINDINGS.md`
+records that the Mac build was installed to `drive_c/PigParseMac/` and run, that
+`EQTool.exe` held MD5 `ef8501bcd7539862f9eee52278d0df23` across the test,
+byte-identical to what was copied in, and that no `NewVersion/` directory ever
+appeared. The guard was verified doing its job under Wine. The spike also left
+the stock install at `drive_c/PigParse/` untouched on purpose, which is exactly
+the directory the installer later took over.
+
+So the guards are a finished, tested component that the install path does not
+reach, rather than code that never worked. That matters for the Wine privacy
+question: if the answer is to ship a fork build, the updater half is already
+written and already verified, so that option costs less than it looked like last
+round.
+
+`Configuration=Mac` is referenced in one place today, the msbuild line in
+`.github/workflows/mac-build.yml`. Nothing downstream consumes what it produces.
