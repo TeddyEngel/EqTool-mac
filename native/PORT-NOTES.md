@@ -2419,3 +2419,34 @@ one bad exclusion, which is the same failure as every other bad measurement here
 the filter was written to match the expected answer rather than the question.
 
 No new dead code. The two already found and fixed were the only instances.
+
+### Why WindowState.State stays unread
+
+Recorded as a judgement that was being avoided, which was too vague. There is a
+concrete reason.
+
+Upstream restores it verbatim, minimised included. Reopening now brings back
+whatever was open at exit, so restoring the state as well would mean a window
+minimised when the client closed reopens minimised: it is counted as open, it is
+opened, and nothing appears. Leaving the field unread means such a window comes
+back normal and visible, which is the better of the two.
+
+Measured while checking this, on the headless backend:
+
+```
+normal position   400, 300
+after minimise    400, 300   state=Minimized
+captured rect     400,300 640x450
+after close       Closed=True   ShouldReopen=False
+```
+
+A minimised window still reports usable coordinates, so `Capture` stores a real
+rect rather than something meaningless, and the close path behaves. That is the
+headless backend rather than a real display, so it says the logic holds, not that
+macOS reports the same numbers.
+
+One trap for anyone implementing this later. `WindowState` is ambiguous in this
+codebase: `Avalonia.Controls.WindowState` and `EQTool.Models.WindowState` are
+different types sharing a name, and restoring the field means assigning between
+two same-named enums. `WindowPreferences` already qualifies its parameter for
+that reason.
