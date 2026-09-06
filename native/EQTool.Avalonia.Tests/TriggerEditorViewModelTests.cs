@@ -372,5 +372,130 @@ namespace EQTool.Avalonia.Tests
             // Assert
             Assert.AreEqual(1, saveCount);
         }
+
+        [TestMethod]
+        public void ResetToDefaults_WhenNotArmed_LeavesTriggersUntouched()
+        {
+            // Arrange
+            var editor = CreateEditor();
+
+            // Act
+            editor.ResetToDefaults();
+
+            // Assert
+            Assert.AreEqual(3, editor.Triggers.Count);
+            Assert.IsTrue(settings.Triggers.Any(a => a.TriggerName == "My Custom Pull"));
+            Assert.AreEqual(0, saveCount);
+        }
+
+        [TestMethod]
+        public void ResetToDefaults_WhenArmed_RemovesUserTriggers()
+        {
+            // Arrange
+            var editor = CreateEditor();
+            editor.ResetArmed = true;
+
+            // Act
+            editor.ResetToDefaults();
+
+            // Assert
+            Assert.IsFalse(settings.Triggers.Any(a => a.TriggerName == "My Custom Pull"));
+        }
+
+        [TestMethod]
+        public void ResetToDefaults_WhenArmed_RestoresBuiltInLibrary()
+        {
+            // Arrange
+            var editor = CreateEditor();
+            editor.ResetArmed = true;
+            var expected = BuiltInTriggers.All()
+                .Where(a => !string.IsNullOrEmpty(a.BuiltInId))
+                .Select(a => a.BuiltInId)
+                .Distinct(System.StringComparer.OrdinalIgnoreCase)
+                .Count();
+
+            // Act
+            editor.ResetToDefaults();
+
+            // Assert
+            Assert.AreEqual(expected, settings.Triggers.Count);
+            Assert.IsTrue(settings.Triggers.All(a => !string.IsNullOrEmpty(a.BuiltInId)));
+        }
+
+        [TestMethod]
+        public void ResetToDefaults_WhenArmed_RemovesUserFolders()
+        {
+            // Arrange
+            var editor = CreateEditor();
+            settings.TriggerFolders = new List<TriggerFolder>
+            {
+                new TriggerFolder { Id = System.Guid.NewGuid(), Name = "My Folder" }
+            };
+            editor.ResetArmed = true;
+
+            // Act
+            editor.ResetToDefaults();
+
+            // Assert
+            Assert.AreEqual(0, settings.TriggerFolders.Count);
+        }
+
+        [TestMethod]
+        public void ResetToDefaults_WhenArmed_Persists()
+        {
+            // Arrange
+            var editor = CreateEditor();
+            editor.ResetArmed = true;
+
+            // Act
+            editor.ResetToDefaults();
+
+            // Assert
+            Assert.AreEqual(1, saveCount);
+        }
+
+        [TestMethod]
+        public void ResetToDefaults_WhenArmed_DisarmsItself()
+        {
+            // Arrange
+            var editor = CreateEditor();
+            editor.ResetArmed = true;
+
+            // Act
+            editor.ResetToDefaults();
+
+            // Assert
+            Assert.IsFalse(editor.ResetArmed);
+        }
+
+        [TestMethod]
+        public void ResetToDefaults_WhenArmed_ClearsSelection()
+        {
+            // Arrange
+            var editor = CreateEditor();
+            editor.Selected = editor.Triggers.First();
+            editor.ResetArmed = true;
+
+            // Act
+            editor.ResetToDefaults();
+
+            // Assert
+            Assert.IsFalse(editor.HasSelection);
+        }
+
+        [TestMethod]
+        public void ResetToDefaults_WhenArmed_RefreshesVisibleList()
+        {
+            // Arrange
+            var editor = CreateEditor();
+            editor.ResetArmed = true;
+
+            // Act
+            editor.ResetToDefaults();
+
+            // Assert
+            Assert.IsFalse(editor.Triggers.Any(a => a.Name == "My Custom Pull"));
+            Assert.AreEqual(settings.Triggers.Count, editor.Triggers.Count);
+        }
     }
 }

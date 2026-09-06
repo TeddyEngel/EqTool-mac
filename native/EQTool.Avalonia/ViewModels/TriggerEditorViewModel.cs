@@ -65,6 +65,7 @@ namespace EQTool.Avalonia.ViewModels
 
         private TriggerRowViewModel selected;
         private string filterText;
+        private bool resetArmed;
 
         public TriggerEditorViewModel() : this(AppServices.Initialize())
         {
@@ -274,6 +275,33 @@ namespace EQTool.Avalonia.ViewModels
 
             save();
             RaiseDetailChanged();
+        }
+
+        // Arms the destructive reset. Kept separate from the button so a single stray
+        // click cannot discard a trigger library the user spent time building.
+        public bool ResetArmed
+        {
+            get => resetArmed;
+            set { resetArmed = value; OnPropertyChanged(); }
+        }
+
+        // Destroys the user's own triggers and folders, not just the built-ins.
+        public void ResetToDefaults()
+        {
+            if (!resetArmed)
+                return;
+
+            settings.Triggers = new List<Trigger>();
+            settings.TriggerFolders = new List<TriggerFolder>();
+            _ = EQToolSettingsLoad.SyncBuiltInTriggers(settings);
+
+            // The selection points at a Trigger that no longer exists in settings.
+            selected = null;
+            ResetArmed = false;
+
+            Rebuild();
+            RaiseDetailChanged();
+            save();
         }
 
         private void Rebuild()
