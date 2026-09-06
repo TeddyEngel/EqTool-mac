@@ -2492,3 +2492,61 @@ The render test still pays for itself, but for structural changes rather than
 typos. Removing the `IsEnabled` attribute and renaming the button both compile
 cleanly and both were caught. The commit message on `249a9f7b` overstates its
 purpose and should be read against this entry.
+
+### "Blocked on hardware" was two claims wearing one label
+
+I carried `IsEqGameFocused` as blocked for several rounds because no `eqgame`
+process exists on this machine to match against. That covered two separate
+things: whether the detection mechanism works, and whether the name string is
+reachable under Wine. Only the second needed EverQuest, and it turned out not to
+need it either.
+
+Wine is installed and the prefix holds 282 Windows executables, so
+`notepad.exe` from `drive_c/windows` stands in for the game. Running it and
+asking every available API about the same pid:
+
+```
+unix ps -o comm=    notepad.exe
+proc_name           notepad.exe
+proc_pidpath        /Applications/Wine Stable.app/.../wine
+.NET ProcessName    wine
+NSWorkspace         name=wine, bundle=(none), policy=0
+```
+
+Upstream compares `Process.ProcessName` to `eqgame`. That cannot work here:
+.NET resolves the name through `proc_pidpath`, which is the Wine binary, so
+every Wine-hosted program reports as `wine`. NSWorkspace is no better and does
+not expose the Windows executable at all.
+
+`proc_name` is the one call that returns it, and the pid NSWorkspace reports as
+frontmost is the same pid `proc_name` resolves. So the frontmost pid comes from
+AppKit and the name match stays in Core, which also keeps the AppKit dependency
+out of a project that has none.
+
+The prediction I had recorded was right for once. Matching on the NSWorkspace
+name would have matched `wine` and treated any Wine program as EverQuest, which
+is why `IsEqGame_ForTheWineWrapper_IsFalse` exists.
+
+Two other things worth keeping. `AfkAttackedHandler` calls this before its
+cooldown check, so it can fire several times a second during a fight; that ruled
+out shelling out to `ps` and is why the implementation is a single P/Invoke.
+And assigning a macOS-only method to a plain `Func<int?>` raises CA1416, because
+the delegate could be invoked anywhere, so the platform guard lives inside the
+lambda rather than around the assignment.
+
+### A mutation that cannot be caught, and why it stays
+
+`FrontmostProcessId?.Invoke()` survives being changed to `FrontmostProcessId
+.Invoke()`. With no probe installed the null-conditional returns early, and
+without it the `NullReferenceException` lands in the fail-safe catch. Both
+produce `false`, so no test can tell them apart through the public surface.
+
+`IsFocused_WithNoProbeInstalled_IsFalse` therefore asserts a true fact without
+pinning the mechanism. The null-conditional stays because throwing for an
+expected condition is the wrong shape, not because a test defends it. The catch
+is deliberately broad: this runs inside log parsing and must never take the
+parser down.
+
+The sibling mutation, dropping `frontmost.Value <= 0`, did get pinned once
+`IsFocused_WhenTheFrontmostPidIsNotReal_IsFalse` fed it a resolver that would
+have answered `eqgame.exe` for pid 0.

@@ -126,6 +126,17 @@ namespace EQTool.Core.Tests
         }
 
         [TestMethod]
+        public void IsFocused_WhenTheFrontmostPidIsNotReal_IsFalse()
+        {
+            // Arrange
+            EqGameFocus.FrontmostProcessId = () => 0;
+            EqGameFocus.ResolveProcessName = _ => "eqgame.exe";
+
+            // Assert
+            Assert.IsFalse(EqGameFocus.IsFocused());
+        }
+
+        [TestMethod]
         public void IsFocused_WhenTheFrontmostProcessIsSomethingElse_IsFalse()
         {
             // Arrange
