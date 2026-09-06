@@ -2342,3 +2342,36 @@ no heuristic, and that answer holds whatever the first number really is.
 Both settings containers are now exhausted. Six dead settings were found and
 fixed by tripping over them one at a time; two deliberate sweeps since have found
 nothing further. The next one would have to be introduced rather than discovered.
+
+### The settings window was on the reopen list and never attached
+
+Found by checking my own work from two rounds earlier rather than by another
+sweep. `App.ReopenLastSession` names six windows. Only a window that calls
+`WindowPreferences.Attach` has its state written, and `ShouldReopen` needs a
+stored rect to tell "was open" from "never seen".
+
+`SettingsWindow` was the one view that never attached. So its line on the reopen
+list could not fire under any circumstances, and the window did not remember its
+position or size either, unlike the other six.
+
+The cause is worth naming. The reopen list was written from upstream's
+`App.xaml.cs`, which enumerates the windows upstream restores, rather than from
+what this client actually attaches. Copying the shape of the original without
+checking the local half is how the entry came to exist for a window that could
+never satisfy it.
+
+`SettingsWindow` attaches now, on its parameterless constructor only. The other
+constructor is handed throwaway state by tests, and reaching for `AppServices`
+there would open the real settings file.
+
+Two tests hold the invariant. The first reads the `Reopen` calls out of
+`App.axaml.cs` and asserts every named window's source contains an `Attach`. The
+second asserts no two windows attach to the same `WindowState`, since sharing one
+would have them overwrite each other's position and fight over the closed flag.
+
+Both read sources rather than exercising windows, which is unusual and worth
+justifying. Constructing `MapWindow`, `DpsWindow`, `ConsoleWindow`,
+`MobInfoWindow` or `SettingsWindow` the way the client does calls
+`AppServices.Initialize`, which opens the live settings file, so a behavioural
+version of this test would read a real configuration. The invariant is structural
+in any case: the call is either written down or it is not.

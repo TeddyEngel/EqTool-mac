@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
+using EQTool.Avalonia.Services;
 using EQTool.Avalonia.ViewModels;
 using System;
 using System.Linq;
@@ -15,6 +16,10 @@ namespace EQTool.Avalonia.Views
 
         public SettingsWindow() : this(new SettingsWindowViewModel())
         {
+            // Only on this path: the constructor below is handed throwaway state
+            // by tests, and reaching for AppServices there would read the real
+            // settings file.
+            WindowPreferences.Attach(this, AppServices.Initialize().Bootstrap.Settings.SettingsWindowState);
         }
 
         // Taking the view model lets the window be shown against throwaway settings.
