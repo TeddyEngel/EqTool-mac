@@ -83,12 +83,8 @@ jobs:
           -c Release --verbosity minimal
           --filter "FullyQualifiedName!~SimplePathCombineTests&FullyQualifiedName!~ProgramPathCombineTests&FullyQualifiedName!~DirectoryCombineTests&FullyQualifiedName!~ParsesFullPath"
 
-  # EQTool.Avalonia pins RuntimeIdentifier=osx-x64, which makes
-  # EQTool.Avalonia.dll a platform specific x86-64 PE rather than AnyCPU. The
-  # CLR will not load that in an arm64 process, so this half needs the Intel
-  # image and will queue for it.
   native-client:
-    runs-on: macos-13
+    runs-on: macos-14
     steps:
       - name: Checkout
         uses: actions/checkout@v4
