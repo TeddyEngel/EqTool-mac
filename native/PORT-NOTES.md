@@ -3092,3 +3092,64 @@ Changing what ships is not mine to decide, and it belongs with the packaging
 question rather than being folded in quietly. It is the same root cause as the
 runner problem: the project is pinned to the architecture that is now the
 minority.
+
+### Splitting the CI job, and what it caught in sixty seconds
+
+The single `native` job never scheduled. Measuring rather than assuming showed
+the Intel pin only binds half the work:
+
+```
+EQTool.Avalonia.dll        PE32+ x86-64      platform specific, needs Intel
+EQTool.Core.dll            PE32  i386        AnyCPU
+EQTool.Core.Tests.dll      PE32  i386        AnyCPU
+libAvaloniaNative.dylib    arm64 + x86_64    universal
+```
+
+`EQTool.Core` references no other project, so the 494 Core tests have no
+architecture dependency at all. Splitting them onto `macos-14` got them
+scheduled in seconds, and only the Avalonia half now waits for the Intel image.
+
+That also corrects the previous round, where I wrote that the managed assembly is
+architecture neutral IL. True of Core and the test assemblies, false of the
+client, which the RID marks x86-64.
+
+The Core job then failed immediately on something fifteen rounds of local runs
+never produced:
+
+```
+EQTool/Services/Handlers/CompleteHealCommsHandler.cs(144,21):
+error CS8209: A value of type 'void' may not be assigned.
+```
+
+Line 144 is `_ = splits.Reverse()` on a `string[]`. `Enumerable.Reverse` returns
+an `IEnumerable` and the result is discarded, so the array is untouched.
+`Array.Reverse` returns void and reverses in place. SDK 9.0.102 binds the first
+and a newer SDK binds a void returning one, so the two toolchains disagree about
+whether the `foreach` on the next line walks forward or backward. That is a
+behaviour difference, not only a compile error, and it sits in an upstream file
+that `EQTool.Core` pulls in by wildcard.
+
+### Four attempts at one pin, and the mechanism I should have checked first
+
+Pinning `actions/setup-dotnet` to `9.0.102` did nothing. The runner image already
+carries .NET 10, and setup-dotnet installs an SDK without making MSBuild select
+it.
+
+Adding `native/global.json` also did nothing, which is the interesting part.
+`global.json` is resolved from the current working directory, not from the
+project path, and the steps ran `dotnet test native/...` from the repository
+root. Proved rather than argued, by putting an impossible version in the file:
+
+```
+from repo root    dotnet --version -> 9.0.102   file ignored
+from native/      dotnet --version -> fails     file honoured
+```
+
+So the fix was `working-directory: native` on the native steps. Green on the
+fourth attempt.
+
+Two things worth keeping from that. Three of the four attempts were reasoning
+that sounded right and was not checked, and the one cheap experiment settled it
+in under a minute. And the pin is a workaround: `EQTool.Core` genuinely does not
+compile on newer SDKs, and choosing which `Reverse` was meant is an upstream
+semantics question rather than a cleanup I should make quietly.
