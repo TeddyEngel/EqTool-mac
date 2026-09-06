@@ -38,10 +38,22 @@ namespace EQTool.Avalonia.Services
         [DllImport(LibObjC, EntryPoint = "objc_msgSend")]
         private static extern ulong objc_msgSend_ulong(IntPtr receiver, IntPtr selector);
 
+        [DllImport(LibObjC, EntryPoint = "objc_msgSend")]
+        private static extern IntPtr objc_msgSend_IntPtr(IntPtr receiver, IntPtr selector);
+
+        [DllImport(LibObjC, EntryPoint = "objc_msgSend")]
+        private static extern int objc_msgSend_int(IntPtr receiver, IntPtr selector);
+
+        [DllImport(LibObjC, EntryPoint = "objc_getClass")]
+        private static extern IntPtr objc_getClass([MarshalAs(UnmanagedType.LPStr)] string name);
+
         private static readonly IntPtr SelSetLevel = sel_registerName("setLevel:");
         private static readonly IntPtr SelSetIgnoresMouseEvents = sel_registerName("setIgnoresMouseEvents:");
         private static readonly IntPtr SelSetCollectionBehavior = sel_registerName("setCollectionBehavior:");
         private static readonly IntPtr SelCollectionBehavior = sel_registerName("collectionBehavior");
+        private static readonly IntPtr SelSharedWorkspace = sel_registerName("sharedWorkspace");
+        private static readonly IntPtr SelFrontmostApplication = sel_registerName("frontmostApplication");
+        private static readonly IntPtr SelProcessIdentifier = sel_registerName("processIdentifier");
 
         public const nint NSNormalWindowLevel = 0;
         public const nint NSFloatingWindowLevel = 3;
@@ -87,6 +99,30 @@ namespace EQTool.Avalonia.Services
                 | NSWindowCollectionBehaviorStationary;
 
             objc_msgSend_void_ulong(nsWindow, SelSetCollectionBehavior, behaviour);
+        }
+
+        // NSWorkspace reports a Wine-hosted program as "wine" with no bundle identifier,
+        // so the pid is the only usable identity it offers. The Windows executable name
+        // behind that pid comes from proc_name on the Core side.
+        public static int? TryGetFrontmostProcessId()
+        {
+            if (!IsSupported)
+                return null;
+
+            var workspaceClass = objc_getClass("NSWorkspace");
+            if (workspaceClass == IntPtr.Zero)
+                return null;
+
+            var workspace = objc_msgSend_IntPtr(workspaceClass, SelSharedWorkspace);
+            if (workspace == IntPtr.Zero)
+                return null;
+
+            var frontmost = objc_msgSend_IntPtr(workspace, SelFrontmostApplication);
+            if (frontmost == IntPtr.Zero)
+                return null;
+
+            var processId = objc_msgSend_int(frontmost, SelProcessIdentifier);
+            return processId > 0 ? processId : (int?)null;
         }
 
         // Returns false rather than throwing when the handle is not there yet, so a

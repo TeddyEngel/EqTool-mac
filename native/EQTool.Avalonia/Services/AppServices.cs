@@ -60,6 +60,12 @@ namespace EQTool.Avalonia.Services
             // installs this, so tests keep their settings in memory.
             WindowPreferences.Persist = () => bootstrap.Loader.Save(bootstrap.Settings);
 
+            // Core owns the eqgame name match but has no way to reach AppKit. Nothing
+            // else installs this, so tests and headless runs fall back to reporting
+            // the game as not focused.
+            EQTool.Platform.EqGameFocus.FrontmostProcessId = () =>
+                OperatingSystem.IsMacOS() ? MacOSWindowInterop.TryGetFrontmostProcessId() : null;
+
             return current;
         }
 

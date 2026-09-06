@@ -114,7 +114,7 @@ namespace EQTool.Services
     {
         public static bool IsEqGameFocused()
         {
-            return false;
+            return EQTool.Platform.EqGameFocus.IsFocused();
         }
     }
 }
