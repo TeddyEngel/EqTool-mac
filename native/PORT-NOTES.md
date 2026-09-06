@@ -3189,3 +3189,30 @@ qualifying tokens. Whether real logs produce that, I have not established and
 should not guess.
 
 The handler was restored byte for byte afterwards and the probe deleted.
+
+### What an arm64 build would cost
+
+The architecture question was sitting on an untested assumption, so I built the
+client for arm64 from this Intel machine:
+
+```
+dotnet build native/EQTool.Avalonia -c Release -p:RuntimeIdentifier=osx-arm64
+
+0 Warning(s), 0 Error(s)
+EQTool.Avalonia       Mach-O 64-bit executable arm64
+EQTool.Avalonia.dll   PE32+ Aarch64
+```
+
+Nothing in the dependency graph blocks it. The three native libraries Avalonia
+ships, `libAvaloniaNative`, `libSkiaSharp` and `libHarfBuzzSharp`, are already
+universal, and no managed dependency objected.
+
+So switching is a RID change rather than a porting exercise, which is worth
+knowing before deciding the packaging question. It also confirms the earlier
+reading of why the arm64 runner refused the x64 build: the managed assembly
+follows the RID, `PE32+ x86-64` against `PE32+ Aarch64`, and the CLR will not
+load the wrong one.
+
+Two things this does not show. The arm64 build has not been run, because this
+machine cannot execute it. And a universal binary is a separate mechanism,
+building both identifiers and combining them, which I have not attempted.
