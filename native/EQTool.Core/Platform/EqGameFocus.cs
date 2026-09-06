@@ -2,7 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace EQTool.Platform
+namespace EQTool.Core.Platform
 {
     public static class EqGameFocus
     {

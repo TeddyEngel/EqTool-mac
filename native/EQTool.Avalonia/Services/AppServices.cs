@@ -63,7 +63,7 @@ namespace EQTool.Avalonia.Services
             // Core owns the eqgame name match but has no way to reach AppKit. Nothing
             // else installs this, so tests and headless runs fall back to reporting
             // the game as not focused.
-            EQTool.Platform.EqGameFocus.FrontmostProcessId = () =>
+            EQTool.Core.Platform.EqGameFocus.FrontmostProcessId = () =>
                 OperatingSystem.IsMacOS() ? MacOSWindowInterop.TryGetFrontmostProcessId() : null;
 
             return current;

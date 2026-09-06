@@ -53,6 +53,11 @@ namespace EQTool.Avalonia.Views
             viewModel.TriggerEditor.ResetToDefaults();
         }
 
+        private void OnEnableEqLoggingClicked(object sender, RoutedEventArgs e)
+        {
+            viewModel.EnableEqLogging();
+        }
+
         private void InitializeComponent()
         {
             AvaloniaXamlLoader.Load(this);

@@ -1,4 +1,4 @@
-using EQTool.Platform;
+using EQTool.Core.Platform;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;

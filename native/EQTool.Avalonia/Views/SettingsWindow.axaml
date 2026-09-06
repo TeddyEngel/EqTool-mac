@@ -114,8 +114,19 @@
                     Content="Choose log folder…" />
 
             <TextBlock Classes="hint"
-                       Text="EverQuest is not writing a log. Nothing here will update until logging is on: set Log=TRUE in eqclient.ini, or turn it on from inside the game."
+                       Text="EverQuest is not writing a log. Nothing here will update until logging is on. Close EverQuest first, then use the button below, or set Log=TRUE in eqclient.ini yourself."
                        IsVisible="{Binding EqLoggingIsOff}"
+                       TextWrapping="Wrap" />
+
+            <Button Classes="ghost"
+                    HorizontalAlignment="Left"
+                    IsVisible="{Binding EqLoggingIsOff}"
+                    Click="OnEnableEqLoggingClicked"
+                    Content="Turn EverQuest logging on" />
+
+            <TextBlock Classes="hint"
+                       Text="{Binding EqLoggingMessage}"
+                       IsVisible="{Binding HasEqLoggingMessage}"
                        TextWrapping="Wrap" />
 
             <TextBlock Classes="section" Text="DISPLAY" />

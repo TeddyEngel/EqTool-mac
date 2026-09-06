@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace EQTool.Platform
+namespace EQTool.Core.Platform
 {
     public enum EqLoggingEnableOutcome
     {

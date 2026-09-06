@@ -168,6 +168,23 @@ namespace EQTool.Avalonia.ViewModels
             OnPropertyChanged(nameof(EqLoggingIsOff));
         }
 
+        private string eqLoggingMessage;
+
+        public string EqLoggingMessage
+        {
+            get => eqLoggingMessage;
+            private set { eqLoggingMessage = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasEqLoggingMessage)); }
+        }
+
+        public bool HasEqLoggingMessage => !string.IsNullOrWhiteSpace(eqLoggingMessage);
+
+        public void EnableEqLogging()
+        {
+            var result = EqLoggingEnabler.Enable(settings.DefaultEqDirectory);
+            EqLoggingMessage = result.Message;
+            RefreshLoggingState();
+        }
+
         public int FontSize
         {
             get => settings.FontSize ?? 12;

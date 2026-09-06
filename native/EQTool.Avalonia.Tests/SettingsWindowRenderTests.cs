@@ -191,6 +191,66 @@ namespace EQTool.Avalonia.Tests
         }
 
         [TestMethod]
+        public void GeneralTab_EnableLoggingButton_AppearsOnlyWhenLoggingIsOff()
+        {
+            // Arrange
+            var eqDirectory = System.IO.Path.Combine(
+                System.IO.Path.GetTempPath(), "pigparse-render-" + System.Guid.NewGuid().ToString("N"));
+            _ = System.IO.Directory.CreateDirectory(eqDirectory);
+            System.IO.File.WriteAllLines(
+                System.IO.Path.Combine(eqDirectory, "eqclient.ini"),
+                new[] { "[Defaults]", "Log=FALSE" });
+
+            var settings = new EQToolSettings { Triggers = new List<Trigger>() };
+            var triggerEditor = new TriggerEditorViewModel(
+                settings, () => { }, new RecordingTextToSpeach(), new RecordingAudioService());
+            var viewModel = new SettingsWindowViewModel(settings, () => { }, new RecordingTextToSpeach(), triggerEditor);
+
+            var visibleBefore = true;
+            var visibleAfter = false;
+            var found = false;
+
+            try
+            {
+                // Act
+                session.Dispatch(() =>
+                {
+                    var window = new SettingsWindow(viewModel);
+                    window.Show();
+                    window.UpdateLayout();
+
+                    var button = window
+                        .GetVisualDescendants()
+                        .OfType<Button>()
+                        .FirstOrDefault(a => (a.Content as string) == "Turn EverQuest logging on");
+
+                    found = button != null;
+                    if (button != null)
+                    {
+                        visibleBefore = button.IsVisible;
+
+                        settings.DefaultEqDirectory = eqDirectory;
+                        viewModel.RefreshLoggingState();
+                        window.UpdateLayout();
+
+                        visibleAfter = button.IsVisible;
+                    }
+
+                    window.Close();
+                }, CancellationToken.None).GetAwaiter().GetResult();
+
+                // Assert
+                Assert.IsTrue(found, "Expected a logging button on the General tab.");
+                Assert.IsFalse(visibleBefore, "It should stay hidden while no EverQuest directory is set.");
+                Assert.IsTrue(visibleAfter, "It should appear once a directory with Log=FALSE is detected.");
+            }
+            finally
+            {
+                System.IO.Directory.Delete(eqDirectory, true);
+            }
+        }
+
+        [TestMethod]
         public void GeneralTab_ResetTriggersButton_TracksTheArmedFlag()
         {
             // Arrange
