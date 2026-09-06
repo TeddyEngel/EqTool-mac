@@ -1144,6 +1144,12 @@ So this failure is a precondition on that feature, not a dismissible one. If UI
 file sync is ever enabled, route those two calls through `MacPathNormalizer`
 first and make `ParsesFullPath` pass.
 
+Read that alongside "What I flattened when reporting the 28 failures" further
+down. The precondition is conditional on UI file sync being wired up, and
+`UIFileSyncService` is not compiled into the Mac build, so nothing downstream of
+this is reachable today. Later status reports dropped that condition and turned
+an inert test into a blocker.
+
 ### Correction: location sharing was live in the native client
 
 An earlier note in this file described the four remaining integrations as "not
