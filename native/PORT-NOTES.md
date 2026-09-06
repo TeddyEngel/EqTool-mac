@@ -3287,3 +3287,42 @@ inconclusive result needing its own caveat.
 Recording it so the same worry does not get raised again from memory. The
 coverage is better than "nothing tests integration" suggests, and I was about to
 write that sentence before counting.
+
+### Removing the pin, and what CI then proved
+
+Of the three architecture options this is the only one that breaks nobody.
+Keeping `osx-x64` needs Rosetta on every Mac sold since late 2020 and strands
+`native-client` on the scarce Intel image. Switching to `osx-arm64` breaks Intel
+Macs. Removing `<RuntimeIdentifier>` gives an AnyCPU assembly that loads in
+either.
+
+Clean build after deleting the line:
+
+```
+EQTool.Avalonia.dll   PE32 i386          AnyCPU, was PE32+ x86-64
+natives               runtimes/osx/native/libAvaloniaNative.dylib
+apphost               follows the build machine
+suites                162 Avalonia, 494 Core
+```
+
+The real startup path still runs headlessly with a sandboxed `HOME`, MainWindow
+set, `OnExplicitShutdown`, settings directory created, nothing thrown.
+
+Then `native-client` moved to `macos-14` and the job that had been queued
+indefinitely finished in about a minute:
+
+```
+native-client  macos-14  Passed!  162/162  14s
+native-core    macos-14  Passed!  494/494  46s
+```
+
+That is worth more than the local checks. All 656 tests now run on arm64 on every
+push, on hardware that is not this machine, and the suite includes
+`TryGetFrontmostProcessId_ReturnsAResolvableProcess`, which loads AppKit, calls
+`NSWorkspace` and resolves a name through `proc_name`. The interop works
+cross-architecture, which a build alone could not have shown.
+
+One thing still unverified, and unverifiable here. Headless does not load
+`libAvaloniaNative`, so whether it resolves from `runtimes/osx/native` under the
+real platform is untested, and no GUI application starts in this environment. It
+is one line to put the pin back.
