@@ -48,3 +48,33 @@ jobs:
           name: EQTool-Mac
           path: EQTool/bin/Mac/
           if-no-files-found: error
+
+  # macos-13 is the Intel runner. Both native projects pin
+  # RuntimeIdentifier=osx-x64, and the current default macOS runner is arm64,
+  # which would need Rosetta to execute the test binaries.
+  native:
+    runs-on: macos-13
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Build native client
+        run: dotnet build native/EQTool.Avalonia/EQTool.Avalonia.csproj -c Release --no-incremental
+
+      - name: Test EQTool.Avalonia
+        run: dotnet test native/EQTool.Avalonia.Tests/EQTool.Avalonia.Tests.csproj -c Release --verbosity minimal
+
+      # The excluded classes are upstream tests that assert Windows path
+      # semantics. Path.GetFileName does not treat a backslash as a separator on
+      # Unix, so C:\Everquest never splits and they cannot pass on macOS. The
+      # remaining 494 are the ones that mean anything here.
+      - name: Test EQTool.Core
+        run: >
+          dotnet test native/EQTool.Core.Tests/EQTool.Core.Tests.csproj
+          -c Release --verbosity minimal
+          --filter "FullyQualifiedName!~SimplePathCombineTests&FullyQualifiedName!~ProgramPathCombineTests&FullyQualifiedName!~DirectoryCombineTests&FullyQualifiedName!~ParsesFullPath"
